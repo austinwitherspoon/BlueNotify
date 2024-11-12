@@ -14,32 +14,46 @@ class UiException implements Exception {
     return message;
   }
 }
-
-class Account {
+class AccountReference {
   final String login;
-  final String password;
   String did;
-  final String server;
-  Map<String, dynamic> session;
 
-  Account(this.login, this.password, this.did,
-      {this.server = 'bsky.social', this.session = const {}});
+  AccountReference(this.login, this.did);
 
-  Account.fromJson(Map<String, dynamic> json)
+  AccountReference.fromJson(Map<String, dynamic> json)
       : login = json['login'],
-        password = json['password'],
-        did = json['did'] ?? '',
-        server = json['server'] ?? 'bsky.social',
-        session = json['session'] ?? {};
+        did = json['did'] ?? '';
 
   Map<String, dynamic> toJson() => {
         'login': login,
-        'password': password,
         'did': did,
-        'server': server,
-        'session': session,
       };
 }
+// class LoggedInAccount {
+//   final String login;
+//   final String password;
+//   String did;
+//   final String server;
+//   Map<String, dynamic> session;
+
+//   LoggedInAccount(this.login, this.password, this.did,
+//       {this.server = 'bsky.social', this.session = const {}});
+
+//   LoggedInAccount.fromJson(Map<String, dynamic> json)
+//       : login = json['login'],
+//         password = json['password'],
+//         did = json['did'] ?? '',
+//         server = json['server'] ?? 'bsky.social',
+//         session = json['session'] ?? {};
+
+//   Map<String, dynamic> toJson() => {
+//         'login': login,
+//         'password': password,
+//         'did': did,
+//         'server': server,
+//         'session': session,
+//       };
+// }
 
 class Profile {
   final String did;
@@ -182,50 +196,50 @@ class BlueskyService {
   }
 }
 
-class LoggedInBlueskyService extends BlueskyService {
-  final bsky.Session _session;
+// class LoggedInBlueskyService extends BlueskyService {
+//   final bsky.Session _session;
 
-  LoggedInBlueskyService(super.bluesky, this._session);
+//   LoggedInBlueskyService(super.bluesky, this._session);
 
-  static Future<LoggedInBlueskyService> login(Account account) async {
-    if (account.login.isEmpty || account.password.isEmpty) {
-      throw Exception("Username and password cannot be empty.");
-    }
-    if (!bsky.isValidAppPassword(account.password)) {
-      throw UiException(
-          "Please create and use an \"app password\", not your real password!");
-    }
-    try {
-      if (account.session.isEmpty) {
-        throw Exception("Session empty.");
-      }
-      var session = bsky.Session.fromJson(account.session);
-      final bluesky = bsky.Bluesky.fromSession(session);
-      account.session = session.toJson();
-      account.did = session.did;
-      developer.log("Session found, reusing.", name: "BlueskyService");
-      return LoggedInBlueskyService(bluesky, session);
-    } catch (e) {
-      developer.log("Session not found, logging in.", name: "BlueskyService");
-      try {
-        var session = (await bsky.createSession(
-          identifier: account.login,
-          password: account.password,
-        ))
-            .data;
+//   static Future<LoggedInBlueskyService> login(Account account) async {
+//     if (account.login.isEmpty || account.password.isEmpty) {
+//       throw Exception("Username and password cannot be empty.");
+//     }
+//     if (!bsky.isValidAppPassword(account.password)) {
+//       throw UiException(
+//           "Please create and use an \"app password\", not your real password!");
+//     }
+//     try {
+//       if (account.session.isEmpty) {
+//         throw Exception("Session empty.");
+//       }
+//       var session = bsky.Session.fromJson(account.session);
+//       final bluesky = bsky.Bluesky.fromSession(session);
+//       account.session = session.toJson();
+//       account.did = session.did;
+//       developer.log("Session found, reusing.", name: "BlueskyService");
+//       return LoggedInBlueskyService(bluesky, session);
+//     } catch (e) {
+//       developer.log("Session not found, logging in.", name: "BlueskyService");
+//       try {
+//         var session = (await bsky.createSession(
+//           identifier: account.login,
+//           password: account.password,
+//         ))
+//             .data;
 
-        final bluesky = bsky.Bluesky.fromSession(session);
-        account.session = session.toJson();
-        account.did = session.did;
-        return LoggedInBlueskyService(bluesky, session);
-      } catch (e) {
-        developer.log("Failed to login: $e", name: "BlueskyService");
-        throw UiException("Failed to login: $e");
-      }
-    }
-  }
+//         final bluesky = bsky.Bluesky.fromSession(session);
+//         account.session = session.toJson();
+//         account.did = session.did;
+//         return LoggedInBlueskyService(bluesky, session);
+//       } catch (e) {
+//         developer.log("Failed to login: $e", name: "BlueskyService");
+//         throw UiException("Failed to login: $e");
+//       }
+//     }
+//   }
 
-  Future<List<Profile>> getFollowing() async {
-    return await getFollowingForUser(_session.did);
-  }
-}
+//   Future<List<Profile>> getFollowing() async {
+//     return await getFollowingForUser(_session.did);
+//   }
+// }

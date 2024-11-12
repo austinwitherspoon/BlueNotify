@@ -83,7 +83,7 @@ class NotificationSetting {
 
 class Settings with ChangeNotifier {
   static SharedPreferences? _sharedPrefs;
-  List<Account>? _accounts = null;
+  List<AccountReference>? _accounts = null;
   List<NotificationSetting>? _notificationSettings = null;
 
   init() async {
@@ -104,7 +104,7 @@ class Settings with ChangeNotifier {
 
   void loadAccounts() {
     _accounts = _sharedPrefs!.getStringList('accounts')?.map((e) {
-      return Account.fromJson(jsonDecode(e));
+      return AccountReference.fromJson(jsonDecode(e));
     }).toList();
   }
 
@@ -114,7 +114,7 @@ class Settings with ChangeNotifier {
     notifyListeners();
   }
 
-  List<Account> get accounts {
+  List<AccountReference> get accounts {
     if (_accounts == null) {
       loadAccounts();
     }
@@ -122,7 +122,7 @@ class Settings with ChangeNotifier {
     return _accounts!;
   }
 
-  void addAccount(Account account) {
+  void addAccount(AccountReference account) {
     accounts.add(account);
     saveAccounts();
   }

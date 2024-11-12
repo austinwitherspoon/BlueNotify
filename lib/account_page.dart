@@ -49,9 +49,8 @@ class _AccountPageState extends State<AccountPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               const Text(
-                "Please enter your Bluesky username and an 'App Password'. "
-                "Please don't use your actual password! Go into Bluesky -> Settings -> Advanced -> App Passwords "
-                "and create a new app password for this app.",
+                "Please enter your bluesky handle! (e.g. alice.bsky.social).\n"
+                "We use this to grab a list of people you're following.",
               ),
               const SizedBox(height: 16.0),
               TextFormField(
@@ -62,20 +61,6 @@ class _AccountPageState extends State<AccountPage> {
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your username';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16.0),
-              TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'App Password',
-                ),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your app password';
                   }
                   return null;
                 },
@@ -92,12 +77,12 @@ class _AccountPageState extends State<AccountPage> {
                 ),
               const SizedBox(height: 16.0),
               ElevatedButton(
-                onPressed: login,
+                onPressed: checkAccount,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
-                child: const Text('Login'),
+                child: const Text('Add Account'),
               ),
             ],
           ),
@@ -106,7 +91,7 @@ class _AccountPageState extends State<AccountPage> {
     );
   }
 
-  void login() async {
+  void checkAccount() async {
     if (_formKey.currentState!.validate()) {
       var username = _usernameController.text;
       if (!username.contains(".")) {
@@ -114,16 +99,26 @@ class _AccountPageState extends State<AccountPage> {
         _usernameController.text = username;
       }
 
-      final password = _passwordController.text;
-      final account = Account(username, password, "");
+      final account = AccountReference(username, "");
 
       try {
         showAlertDialog(context);
-        await LoggedInBlueskyService.login(account);
+        var con = await BlueskyService.getPublicConnection();
+        try {
+          var profile = await con.getProfile(username);
+          account.did = profile.did;
+        } catch (e) {
+          developer.log("Invalid account!: $e", name: "AccountPage");
+          setState(() {
+            _formError = "Could not find account";
+          });
+          Navigator.pop(context);
+          return;
+        }
       } catch (e) {
-        developer.log("Failed to login: $e", name: "AccountPage");
+        developer.log("Failed to connect to bluesky: $e", name: "AccountPage");
         setState(() {
-          _formError = e.toString();
+          _formError = "Could not connect to bluesky: " + e.toString();
         });
         Navigator.pop(context);
         return;
@@ -135,4 +130,34 @@ class _AccountPageState extends State<AccountPage> {
       Navigator.pop(context);
     }
   }
+
+  // void login() async {
+  //   if (_formKey.currentState!.validate()) {
+  //     var username = _usernameController.text;
+  //     if (!username.contains(".")) {
+  //       username += ".bsky.social";
+  //       _usernameController.text = username;
+  //     }
+
+  //     final password = _passwordController.text;
+  //     final account = LoggedInAccount(username, password, "");
+
+  //     try {
+  //       showAlertDialog(context);
+  //       await LoggedInBlueskyService.login(account);
+  //     } catch (e) {
+  //       developer.log("Failed to login: $e", name: "AccountPage");
+  //       setState(() {
+  //         _formError = e.toString();
+  //       });
+  //       Navigator.pop(context);
+  //       return;
+  //     }
+
+  //     final settings = Provider.of<Settings>(context, listen: false);
+  //     settings.addAccount(account);
+  //     Navigator.pop(context);
+  //     Navigator.pop(context);
+  //   }
+  // }
 }

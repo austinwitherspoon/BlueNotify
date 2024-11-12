@@ -21,7 +21,7 @@ class UsernameDisplay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        if (displayName != null) Text(displayName!),
+        Text(displayName ?? username),
         Text(username, style: const TextStyle(fontSize: 12)),
       ],
     );
@@ -139,15 +139,15 @@ class _NotificationPageState extends State<NotificationPage> {
       return;
     }
 
-    Account account;
+    AccountReference account;
     if (accounts.length == 1) {
       account = accounts.first;
     } else {
-      account = await showDialog<Account>(
+      var ask_for_account = await showDialog<AccountReference>(
             context: context,
             builder: (BuildContext context) {
               return AlertDialog(
-                title: const Text("Choose an account"),
+            title: const Text("Choose one of your accounts to use:"),
                 content: SingleChildScrollView(
                   child: ListBody(
                     children: accounts.map((account) {
@@ -162,13 +162,16 @@ class _NotificationPageState extends State<NotificationPage> {
                 ),
               );
             },
-          ) ??
-          accounts.first;
+      );
+      if (ask_for_account == null) {
+        return;
+      }
+      account = ask_for_account;
     }
 
     showAlertDialog(context);
-    final service = await LoggedInBlueskyService.login(account);
-    final following = await service.getFollowing();
+    final service = await BlueskyService.getPublicConnection();
+    final following = await service.getFollowingForUser(account.did);
     following.sort((a, b) =>
         (a.displayName ?? a.handle).compareTo(b.displayName ?? b.handle));
     // while we have the data, update handles and display names for existing profiles

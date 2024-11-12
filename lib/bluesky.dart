@@ -68,7 +68,15 @@ class Profile {
   }
 
   static Profile fromActor(bsky.Actor actor) {
-    return Profile(actor.did, actor.handle, actor.displayName, actor.avatar);
+    var displayName = actor.displayName;
+    if (displayName == null || displayName.isEmpty) {
+      displayName = null;
+    }
+    return Profile(actor.did, actor.handle, displayName, actor.avatar);
+  }
+
+  String sortName() {
+    return (displayName ?? handle).toLowerCase();
   }
 
   @override

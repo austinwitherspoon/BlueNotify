@@ -191,7 +191,9 @@ class _NotificationPageState extends State<NotificationPage> {
     final service = await BlueskyService.getPublicConnection();
     final following = await service.getFollowingForUser(account.did);
     following.sort((a, b) =>
-        (a.displayName ?? a.handle).compareTo(b.displayName ?? b.handle));
+        (a.sortName()).compareTo(b.sortName()));
+
+    print(following);
     // while we have the data, update handles and display names for existing profiles
     for (var profile in following) {
       final existingSetting =
@@ -235,7 +237,7 @@ class _NotificationPageState extends State<NotificationPage> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text("Choose a user to follow"),
+              title: const Text("Choose a user to receive notifications for:"),
               content: Column(
                 children: [
                   TextField(

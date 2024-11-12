@@ -31,7 +31,7 @@ class UsernameDisplay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(displayName ?? username),
+        Text(displayName ?? username, softWrap: true),
         Text(username, style: const TextStyle(fontSize: 12)),
       ],
     );
@@ -271,7 +271,7 @@ class _NotificationPageState extends State<NotificationPage> {
                                   profile.did,
                                   account.did,
                                   profile.handle,
-                                  profile.displayName ?? profile.handle,
+                                  profile.displayName,
                                   {}..addAll(defaultNotificationSettings));
                               Navigator.of(context).pop();
                               await settings.addNotificationSetting(newSetting);

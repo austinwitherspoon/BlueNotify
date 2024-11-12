@@ -45,6 +45,8 @@ class NotificationPage extends StatefulWidget {
 }
 
 class _NotificationPageState extends State<NotificationPage> {
+  String searchQuery = '';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -129,6 +131,7 @@ class _NotificationPageState extends State<NotificationPage> {
   void addNotification() async {
     final settings = Provider.of<Settings>(context, listen: false);
     final accounts = settings.accounts;
+    searchQuery = '';
 
     if (accounts.isEmpty) {
       showDialog(
@@ -226,27 +229,57 @@ class _NotificationPageState extends State<NotificationPage> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Choose a user to follow"),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: following.map((profile) {
-                return ListTile(
-                  title: UsernameDisplay.fromProfile(profile),
-                  onTap: () async {
-                    final newSetting = NotificationSetting(
-                        profile.did,
-                        account.did,
-                        profile.handle,
-                        profile.displayName ?? profile.handle,
-                        {}..addAll(defaultNotificationSettings));
-                    await settings.addNotificationSetting(newSetting);
-                    Navigator.of(context).pop();
-                  },
-                );
-              }).toList(),
-            ),
-          ),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text("Choose a user to follow"),
+              content: Column(
+                children: [
+                  TextField(
+                    decoration: const InputDecoration(
+                      labelText: 'Search',
+                      hintText: 'Search for a user',
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        searchQuery = value.toLowerCase();
+                      });
+                    },
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: ListBody(
+                        children: following
+                            .where((profile) =>
+                                profile.handle
+                                    .toLowerCase()
+                                    .contains(searchQuery) ||
+                                (profile.displayName
+                                        ?.toLowerCase()
+                                        .contains(searchQuery) ??
+                                    false))
+                            .map((profile) {
+                          return ListTile(
+                            title: UsernameDisplay.fromProfile(profile),
+                            onTap: () async {
+                              final newSetting = NotificationSetting(
+                                  profile.did,
+                                  account.did,
+                                  profile.handle,
+                                  profile.displayName ?? profile.handle,
+                                  {}..addAll(defaultNotificationSettings));
+                              Navigator.of(context).pop();
+                              await settings.addNotificationSetting(newSetting);
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );

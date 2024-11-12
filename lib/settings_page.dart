@@ -1,7 +1,6 @@
 import 'package:blue_notify/account_page.dart';
 import 'package:blue_notify/settings.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -15,33 +14,63 @@ class SettingsPage extends StatelessWidget {
         return ListView(
           children: <Widget>[
             ListTile(
-              title: const Text("Notifications Enabled"),
-              trailing: Switch(
-                value: settings.enabled,
-                onChanged: (value) {
-                  settings.enabled = value;
+              title: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.secondary,
+                  foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                ),
+                onPressed: () async {
+                  showLoadingDialog(context);
+                  await settings.forceResync();
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Resync completed')),
+                  );
                 },
+                child: const Text("Force Resync"),
               ),
             ),
             ListTile(
-                title: const Text("Sync Frequency (minutes)"),
-                trailing: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.2,
-                    child: TextFormField(
-                        controller: TextEditingController(
-                            text: settings.syncFrequency.toString()),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: <TextInputFormatter>[
-                          FilteringTextInputFormatter.digitsOnly
+              title: ElevatedButton(
+                child: const Text("Remove All Notification Settings"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.secondary,
+                  foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                ),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: const Text("Confirm Removal"),
+                        content: const Text(
+                            "Are you sure you want to remove all notification settings? This action cannot be undone."),
+                        actions: <Widget>[
+                          TextButton(
+                            child: const Text("Cancel"),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                          TextButton(
+                            child: const Text("Remove"),
+                            onPressed: () async {
+                              await settings.removeAllNotificationSettings();
+                              Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content: Text(
+                                        'All notification settings removed')),
+                              );
+                            },
+                          ),
                         ],
-                        onChanged: (value) {
-                          try {
-                            int.parse(value);
-                          } catch (e) {
-                            return;
-                          }
-                          settings.syncFrequency = int.parse(value);
-                        }))),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
             const Divider(),
             const ListTile(
               title: Text("Accounts"),
@@ -106,4 +135,22 @@ class SettingsPage extends StatelessWidget {
       }),
     );
   }
+}
+
+showLoadingDialog(BuildContext context) {
+  AlertDialog alert = AlertDialog(
+    content: new Row(
+      children: [
+        CircularProgressIndicator(),
+        Container(margin: EdgeInsets.only(left: 5), child: Text("Loading")),
+      ],
+    ),
+  );
+  showDialog(
+    barrierDismissible: false,
+    context: context,
+    builder: (BuildContext context) {
+      return alert;
+    },
+  );
 }

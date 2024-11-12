@@ -1,5 +1,4 @@
 import 'package:bluesky/bluesky.dart' as bsky;
-import 'dart:developer' as developer;
 
 const maxPostsToLoad = 200;
 const fetchSize = 50;

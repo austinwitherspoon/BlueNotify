@@ -31,7 +31,6 @@ showLoadingDialog(BuildContext context) {
 
 class _AccountPageState extends State<AccountPage> {
   final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   var _formError = "";
 

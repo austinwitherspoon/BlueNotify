@@ -15,6 +15,24 @@ class _OverviewPageState extends State<OverviewPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Overview"),
+        actions: [
+          Consumer<Settings>(
+            builder: (context, settings, child) {
+              if (settings.notificationHistory.isNotEmpty) {
+                return IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () async {
+                    await settings.clearNotificationHistory();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('All notifications cleared')),
+                    );
+                  },
+                );
+              }
+              return Container();
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),

@@ -59,6 +59,9 @@ class _NotificationPageState extends State<NotificationPage> {
             final setting = notificationSettings[index];
             return ExpansionTile(
               title: UsernameDisplay.fromNotificationSetting(setting),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.0),
+              ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -178,7 +181,7 @@ class _NotificationPageState extends State<NotificationPage> {
       account = ask_for_account;
     }
 
-    showAlertDialog(context);
+    showLoadingDialog(context);
     final service = await BlueskyService.getPublicConnection();
     final following = await service.getFollowingForUser(account.did);
     following.sort((a, b) =>
@@ -250,7 +253,7 @@ class _NotificationPageState extends State<NotificationPage> {
   }
 }
 
-showAlertDialog(BuildContext context) {
+showLoadingDialog(BuildContext context) {
   AlertDialog alert = AlertDialog(
     content: new Row(
       children: [

@@ -92,18 +92,6 @@ class Settings with ChangeNotifier {
     _sharedPrefs ??= await SharedPreferences.getInstance();
   }
 
-  bool get enabled => _sharedPrefs!.getBool('enabled') ?? true;
-  set enabled(bool value) {
-    _sharedPrefs!.setBool('enabled', value);
-    notifyListeners();
-  }
-
-  int get syncFrequency => _sharedPrefs!.getInt('syncFrequency') ?? 1;
-  set syncFrequency(int value) {
-    _sharedPrefs!.setInt('syncFrequency', value);
-    notifyListeners();
-  }
-
   void loadAccounts() {
     _accounts = _sharedPrefs!.getStringList('accounts')?.map((e) {
       return AccountReference.fromJson(jsonDecode(e));
@@ -158,7 +146,6 @@ class Settings with ChangeNotifier {
     var account_dids = accounts.map((e) => e.did).toList();
     await subscriptions.doc(fcmToken).set(
         {'settings': settings, "accounts": account_dids, "fcmToken": fcmToken});
-
   }
 
   List<NotificationSetting> get notificationSettings {
@@ -187,6 +174,16 @@ class Settings with ChangeNotifier {
   Future<void> removeNotificationSetting(String did) async {
     notificationSettings.removeWhere((element) => element.followDid == did);
     await saveNotificationSettings();
+  }
+
+  Future<void> removeAllNotificationSettings() async {
+    _notificationSettings?.clear();
+    await _sharedPrefs!.remove('notificationSettings');
+    notifyListeners();
+    final fcmToken = (await FirebaseMessaging.instance.getToken())!;
+    CollectionReference subscriptions =
+        FirebaseFirestore.instance.collection('subscriptions');
+    await subscriptions.doc(fcmToken).delete();
   }
 
   List<Notification> get notificationHistory {
@@ -230,5 +227,9 @@ class Settings with ChangeNotifier {
   Future<void> clearNotificationHistory() async {
     await _sharedPrefs!.setStringList('notificationHistory', []);
     notifyListeners();
+  }
+
+  Future<void> forceResync() async {
+    await saveNotificationSettings();
   }
 }

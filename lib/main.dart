@@ -8,8 +8,6 @@ import 'settings_page.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:developer' as developer;
 
 
@@ -42,6 +40,7 @@ class Application extends StatefulWidget {
 
 class _Application extends State<Application> with WidgetsBindingObserver {
   Key key = UniqueKey();
+  bool closed = false;
 
   Future<void> setupInteractedMessage() async {
     RemoteMessage? initialMessage =
@@ -86,18 +85,23 @@ class _Application extends State<Application> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.resumed) {
-      developer.log('App resumed, reloading settings');
-      await settings.reload();
-      setState(() {
-        key = UniqueKey();
-      });
+      if (closed) {
+        closed = false;
+        developer.log('App resumed, reloading settings');
+        await settings.reload();
+        setState(() {
+          key = UniqueKey();
+        });
+      }
+    } else if (state == AppLifecycleState.paused) {
+      developer.log('App paused.');
+      closed = true;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     const flutterBlue = Color.fromARGB(255, 32, 139, 254);
-    const secondary = Color.fromARGB(255, 30, 41, 54);
 
     final lightModeScheme = ColorScheme.light(
       primary: flutterBlue,
@@ -113,6 +117,7 @@ class _Application extends State<Application> with WidgetsBindingObserver {
       secondary: Color.fromARGB(255, 30, 41, 54),
       onSecondary: Colors.white,
       surface: const Color.fromARGB(255, 22, 30, 39),
+      outlineVariant: Color.fromARGB(255, 30, 41, 54),
     );
 
     final app = MaterialApp(

@@ -1,4 +1,5 @@
 import 'package:blue_notify/bluesky.dart';
+import 'package:blue_notify/notification.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'settings.dart';
@@ -132,6 +133,8 @@ class _NotificationPageState extends State<NotificationPage> {
     final settings = Provider.of<Settings>(context, listen: false);
     final accounts = settings.accounts;
     searchQuery = '';
+
+    await checkNotificationPermission();
 
     if (accounts.isEmpty) {
       showDialog(

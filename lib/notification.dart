@@ -6,6 +6,24 @@ import 'package:url_launcher/url_launcher.dart';
 
 const maxNotificationsToKeep = 100;
 
+Future<bool> checkNotificationPermission() async {
+  var permissions =
+      await FirebaseMessaging.instance.requestPermission(provisional: true);
+  if (permissions.authorizationStatus != AuthorizationStatus.authorized) {
+    developer.log('Notifications not authorized.');
+    return false;
+  }
+
+  var token = await FirebaseMessaging.instance.getToken();
+  developer.log('Token: $token');
+  if (token == null) {
+    developer.log('No token, returning.');
+    return false;
+  }
+  developer.log('Notifications authorized.');
+  return true;
+}
+
 void catalogNotification(RemoteMessage message) {
   developer.log('Saving notification..');
   final notification = messageToNotification(message);

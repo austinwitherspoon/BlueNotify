@@ -1,5 +1,6 @@
 import 'package:blue_notify/account_page.dart';
 import 'package:blue_notify/settings.dart';
+import 'package:blue_notify/shoutout.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -11,7 +12,9 @@ class SettingsPage extends StatelessWidget {
         title: const Text("Settings"),
       ),
       body: Consumer<Settings>(builder: (context, settings, child) {
-        return ListView(
+        return Column(children: [
+          Expanded(
+            child: ListView(
           children: <Widget>[
             ListTile(
               title: ElevatedButton(
@@ -129,8 +132,13 @@ class SettingsPage extends StatelessWidget {
                   );
                 },
               ),
+                )
+              ],
             ),
-          ],
+          
+          ),
+          Shoutout(),
+        ]
         );
       }),
     );

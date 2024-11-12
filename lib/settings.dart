@@ -118,7 +118,8 @@ class Settings with ChangeNotifier {
     _notificationSettings =
         _sharedPrefs!.getStringList('notificationSettings')?.map((e) {
       return NotificationSetting.fromJson(jsonDecode(e));
-    }).toList();
+            }).toList() ??
+            [];
     _notificationSettings!.sort((a, b) => a.cachedName.compareTo(b.cachedName));
   }
 

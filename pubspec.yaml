@@ -39,6 +39,9 @@ dependencies:
   shared_preferences: ^2.3.3
   bluesky: ^0.15.8
   flutter_background_service: ^5.0.10
+  firebase_messaging: ^15.1.4
+  firebase_core: ^3.7.0
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:

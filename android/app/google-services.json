@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "496531737502",
+    "project_id": "bluenotify-b1700",
+    "storage_bucket": "bluenotify-b1700.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:496531737502:android:0fe8dec417982600a3a48f",
+        "android_client_info": {
+          "package_name": "com.austinwitherspoon.bluenotify"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCete8RIL_y_xNbyeISdUKrvN0tuRlyeyM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

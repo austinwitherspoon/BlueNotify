@@ -1,4 +1,5 @@
 import 'package:blue_notify/account_page.dart';
+import 'package:blue_notify/notification.dart';
 import 'package:blue_notify/settings.dart';
 import 'package:blue_notify/shoutout.dart';
 import 'package:flutter/material.dart';
@@ -24,11 +25,12 @@ class SettingsPage extends StatelessWidget {
                 ),
                 onPressed: () async {
                   showLoadingDialog(context);
-                  await settings.forceResync();
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Resync completed')),
-                  );
+                      await checkNotificationPermission();
+                      await settings.forceResync();
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Resync completed')),
+                      );
                 },
                 child: const Text("Force Resync"),
               ),

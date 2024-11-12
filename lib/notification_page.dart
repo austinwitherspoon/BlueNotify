@@ -218,14 +218,14 @@ class _NotificationPageState extends State<NotificationPage> {
               children: following.map((profile) {
                 return ListTile(
                   title: UsernameDisplay.fromProfile(profile),
-                  onTap: () {
+                  onTap: () async {
                     final newSetting = NotificationSetting(
                         profile.did,
                         account.did,
                         profile.handle,
                         profile.displayName ?? profile.handle,
                         {}..addAll(defaultNotificationSettings));
-                    settings.addNotificationSetting(newSetting);
+                    await settings.addNotificationSetting(newSetting);
                     Navigator.of(context).pop();
                   },
                 );

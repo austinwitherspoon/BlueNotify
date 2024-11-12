@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:blue_notify/bluesky.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -7,6 +9,13 @@ final settings = Settings();
 
 const defaultNotificationSettings = {
   PostType.post,
+};
+
+const postTypeToFirebaseNames = {
+  PostType.post: 'post',
+  PostType.repost: 'repost',
+  PostType.reply: 'reply',
+  PostType.replyToFriend: 'replyToFriend',
 };
 
 class NotificationSetting {
@@ -53,14 +62,22 @@ class NotificationSetting {
 
   Set<PostType> get postTypes => _postTypes;
 
-  void addPostType(PostType value) {
-    _postTypes.add(value);
-    settings.saveNotificationSettings();
+  Map<String, dynamic> toFirestore() {
+    var postTypes = _postTypes.map((e) => postTypeToFirebaseNames[e]).toList();
+    return {
+      'did': followDid,
+      'postTypes': postTypes,
+    };
   }
 
-  void removePostType(PostType value) {
+  Future<void> addPostType(PostType value) async {
+    _postTypes.add(value);
+    await settings.saveNotificationSettings();
+  }
+
+  Future<void> removePostType(PostType value) async {
     _postTypes.remove(value);
-    settings.saveNotificationSettings();
+    await settings.saveNotificationSettings();
   }
 }
 
@@ -93,7 +110,7 @@ class Settings with ChangeNotifier {
 
   void saveAccounts() {
     _sharedPrefs!.setStringList(
-        'accounts', _accounts!.map((e) => jsonEncode(e)).toList());
+        'accounts', accounts.map((e) => jsonEncode(e)).toList());
     notifyListeners();
   }
 
@@ -101,7 +118,8 @@ class Settings with ChangeNotifier {
     if (_accounts == null) {
       loadAccounts();
     }
-    return _accounts ?? [];
+    _accounts = _accounts ?? [];
+    return _accounts!;
   }
 
   void addAccount(Account account) {
@@ -123,9 +141,20 @@ class Settings with ChangeNotifier {
     _notificationSettings!.sort((a, b) => a.cachedName.compareTo(b.cachedName));
   }
 
-  void saveNotificationSettings() {
+  Future<void> saveNotificationSettings() async {
     _sharedPrefs!.setStringList('notificationSettings',
-        _notificationSettings!.map((e) => jsonEncode(e)).toList());
+        notificationSettings.map((e) => jsonEncode(e)).toList());
+    final fcmToken = (await FirebaseMessaging.instance.getToken())!;
+    CollectionReference subscriptions =
+        FirebaseFirestore.instance.collection('subscriptions');
+    var settings = {};
+    for (final setting in notificationSettings) {
+      settings[setting.followDid] = setting.toFirestore();
+    }
+    var account_dids = accounts.map((e) => e.did).toList();
+    await subscriptions.doc(fcmToken).set(
+        {'settings': settings, "accounts": account_dids, "fcmToken": fcmToken});
+
     notifyListeners();
   }
 
@@ -133,12 +162,13 @@ class Settings with ChangeNotifier {
     if (_notificationSettings == null) {
       loadNotificationSettings();
     }
-    return _notificationSettings ?? [];
+    _notificationSettings = _notificationSettings ?? [];
+    return _notificationSettings!;
   }
 
-  void addNotificationSetting(NotificationSetting setting) {
+  Future<void> addNotificationSetting(NotificationSetting setting) async {
     notificationSettings.add(setting);
-    saveNotificationSettings();
+    await saveNotificationSettings();
   }
 
   NotificationSetting? getNotificationSetting(
@@ -151,8 +181,8 @@ class Settings with ChangeNotifier {
     return null;
   }
 
-  void removeNotificationSetting(String did) {
+  Future<void> removeNotificationSetting(String did) async {
     notificationSettings.removeWhere((element) => element.followDid == did);
-    saveNotificationSettings();
+    await saveNotificationSettings();
   }
 }

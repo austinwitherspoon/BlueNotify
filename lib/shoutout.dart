@@ -36,7 +36,7 @@ class ShoutoutSmall extends StatelessWidget {
           color: Theme.of(context).colorScheme.secondary,
           padding: const EdgeInsets.all(16.0),
           child: Text(
-            "Support ethical businesses by shopping at good.store. All Profits go to charity.",
+            "Support ethical businesses by shopping at good.store. All profits go to charity.",
             style: TextStyle(color: Theme.of(context).colorScheme.onSecondary),
             textAlign: TextAlign.center,
           ),

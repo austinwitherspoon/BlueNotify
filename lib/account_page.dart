@@ -11,7 +11,7 @@ class AccountPage extends StatefulWidget {
   State<AccountPage> createState() => _AccountPageState();
 }
 
-showAlertDialog(BuildContext context) {
+showLoadingDialog(BuildContext context) {
   AlertDialog alert = AlertDialog(
     content: new Row(
       children: [
@@ -102,7 +102,7 @@ class _AccountPageState extends State<AccountPage> {
       final account = AccountReference(username, "");
 
       try {
-        showAlertDialog(context);
+        showLoadingDialog(context);
         var con = await BlueskyService.getPublicConnection();
         try {
           var profile = await con.getProfile(username);

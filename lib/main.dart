@@ -1,3 +1,4 @@
+import 'package:blue_notify/notification.dart';
 import 'package:blue_notify/notification_page.dart';
 import 'package:blue_notify/settings.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -9,12 +10,16 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:developer' as developer;
+
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
+  await settings.init();
 
-  print("Handling a background message: ${message.messageId}");
+  developer.log("Handling a background message");
+  catalogNotification(message);
 }
 
 void main() async {
@@ -24,11 +29,9 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await FirebaseMessaging.instance.setAutoInitEnabled(true);
-  final notificationSettings =
-      await FirebaseMessaging.instance.requestPermission(provisional: true);
+  await FirebaseMessaging.instance.requestPermission(provisional: true);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  final fcmToken = await FirebaseMessaging.instance.getToken();
-  print('FCM Token: $fcmToken');
+  await FirebaseMessaging.instance.getToken();
   runApp(Application());
 }
 
@@ -37,7 +40,9 @@ class Application extends StatefulWidget {
   State<StatefulWidget> createState() => _Application();
 }
 
-class _Application extends State<Application> {
+class _Application extends State<Application> with WidgetsBindingObserver {
+  Key key = UniqueKey();
+
   Future<void> setupInteractedMessage() async {
     RemoteMessage? initialMessage =
         await FirebaseMessaging.instance.getInitialMessage();
@@ -49,23 +54,46 @@ class _Application extends State<Application> {
   }
 
   void _handleMessage(RemoteMessage message) async {
-    final url = message.data['url'] ?? null;
-    if (url != null) {
-      print('Opening URL: $url');
-      final Uri uri = Uri.parse(url);
-      if (!await launchUrl(uri)) {
-        print('Could not launch $uri');
-        return;
-      }
+    developer.log('Tapped a message!');
+    final notification = messageToNotification(message);
+    if (notification == null) {
+      return;
     }
+    await notification.tap();
   }
 
+  @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Run code required to handle interacted messages in an async function
     // as initState() must not be async
     setupInteractedMessage();
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      developer.log('Got a message whilst in the foreground!');
+      if (message.notification != null) {
+        catalogNotification(message);
+      }
+    });
   }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state == AppLifecycleState.resumed) {
+      developer.log('App resumed, reloading settings');
+      await settings.reload();
+      setState(() {
+        key = UniqueKey();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const flutterBlue = Color.fromARGB(255, 32, 139, 254);
@@ -89,6 +117,7 @@ class _Application extends State<Application> {
 
     final app = MaterialApp(
       title: 'BlueNotify - Bluesky Notifications',
+      key: key,
       theme: ThemeData(
         colorScheme: lightModeScheme,
         useMaterial3: true,

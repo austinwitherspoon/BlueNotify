@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:blue_notify/bluesky.dart';
+import 'package:blue_notify/notification.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:developer' as developer;
 
 final settings = Settings();
 
@@ -22,7 +24,7 @@ class NotificationSetting {
   final String followDid;
   final String accountDid;
   String cachedHandle = '';
-  String cachedName = '';
+  String? cachedName = null;
   final Set<PostType> _postTypes;
 
   NotificationSetting(this.followDid, this.accountDid, this.cachedHandle,
@@ -47,7 +49,7 @@ class NotificationSetting {
       json['followDid'],
       json['accountDid'],
       json['cachedHandle'] ?? '',
-      json['cachedName'] ?? '',
+      json['cachedName'],
       postTypeSet,
     );
   }
@@ -138,12 +140,14 @@ class Settings with ChangeNotifier {
       return NotificationSetting.fromJson(jsonDecode(e));
             }).toList() ??
             [];
-    _notificationSettings!.sort((a, b) => a.cachedName.compareTo(b.cachedName));
+    _notificationSettings!.sort((a, b) => (a.cachedName ?? a.cachedHandle)
+        .compareTo(b.cachedName ?? b.cachedHandle));
   }
 
   Future<void> saveNotificationSettings() async {
     _sharedPrefs!.setStringList('notificationSettings',
         notificationSettings.map((e) => jsonEncode(e)).toList());
+    notifyListeners();
     final fcmToken = (await FirebaseMessaging.instance.getToken())!;
     CollectionReference subscriptions =
         FirebaseFirestore.instance.collection('subscriptions');
@@ -155,7 +159,6 @@ class Settings with ChangeNotifier {
     await subscriptions.doc(fcmToken).set(
         {'settings': settings, "accounts": account_dids, "fcmToken": fcmToken});
 
-    notifyListeners();
   }
 
   List<NotificationSetting> get notificationSettings {
@@ -184,5 +187,48 @@ class Settings with ChangeNotifier {
   Future<void> removeNotificationSetting(String did) async {
     notificationSettings.removeWhere((element) => element.followDid == did);
     await saveNotificationSettings();
+  }
+
+  List<Notification> get notificationHistory {
+    developer.log('Getting notification history');
+    return _sharedPrefs!.getStringList('notificationHistory')?.map((e) {
+          return Notification.fromJson(jsonDecode(e));
+        }).toList() ??
+        [];
+  }
+
+  Future<void> reload() async {
+    await _sharedPrefs!.reload();
+    notifyListeners();
+  }
+
+  Future<void> addNotification(Notification notification) async {
+    final history = notificationHistory;
+    history.insert(0, notification);
+    if (history.length > maxNotificationsToKeep) {
+      history.removeRange(maxNotificationsToKeep, history.length);
+    }
+    await _sharedPrefs!.setStringList(
+        'notificationHistory', history.map((e) => jsonEncode(e)).toList());
+    notifyListeners();
+  }
+
+  Future<void> removeNotification(Notification notification) async {
+    final history = notificationHistory;
+    final matching = history.firstWhere(
+      (element) =>
+          element.timestamp == notification.timestamp &&
+          element.title == notification.title &&
+          element.subtitle == notification.subtitle,
+    );
+    history.remove(matching);
+    await _sharedPrefs!.setStringList(
+        'notificationHistory', history.map((e) => jsonEncode(e)).toList());
+    notifyListeners();
+  }
+
+  Future<void> clearNotificationHistory() async {
+    await _sharedPrefs!.setStringList('notificationHistory', []);
+    notifyListeners();
   }
 }

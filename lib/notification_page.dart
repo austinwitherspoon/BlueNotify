@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'settings.dart';
 
+
 class UsernameDisplay extends StatelessWidget {
   final String username;
   final String? displayName;
@@ -10,11 +11,19 @@ class UsernameDisplay extends StatelessWidget {
   const UsernameDisplay(this.username, this.displayName);
 
   static fromProfile(Profile profile) {
-    return UsernameDisplay(profile.handle, profile.displayName);
+    var displayName = profile.displayName;
+    if (displayName == null || displayName.isEmpty) {
+      displayName = profile.handle;
+    }
+    return UsernameDisplay(profile.handle, displayName);
   }
 
   static fromNotificationSetting(NotificationSetting setting) {
-    return UsernameDisplay(setting.cachedHandle, setting.cachedName);
+    var displayName = setting.cachedName;
+    if (displayName == null || displayName.isEmpty) {
+      displayName = setting.cachedHandle;
+    }
+    return UsernameDisplay(setting.cachedHandle, displayName);
   }
 
   @override

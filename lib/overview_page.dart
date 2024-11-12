@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'settings.dart';
 
 class OverviewPage extends StatefulWidget {
   const OverviewPage({super.key});
@@ -8,39 +10,59 @@ class OverviewPage extends StatefulWidget {
 }
 
 class _OverviewPageState extends State<OverviewPage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Overview"),
       ),
-      body: const Padding(
-        padding: EdgeInsets.all(8.0),
-        child: Column(
-          children: <Widget>[
-            Card(
-              child: ListTile(
-                leading: Icon(Icons.notifications_sharp),
-                title: Text('Notification 1'),
-                subtitle: Text('This is a notification'),
-              ),
-            ),
-            Card(
-              child: ListTile(
-                leading: Icon(Icons.notifications_sharp),
-                title: Text('Notification 2'),
-                subtitle: Text('This is a notification'),
-              ),
-            ),
-          ],
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Consumer<Settings>(
+          builder: (context, settings, child) {
+            final notificationHistory = settings.notificationHistory;
+            if (notificationHistory.isEmpty) {
+              return const Center(
+                child: Text("No notifications available."),
+              );
+            }
+            return ListView.builder(
+              itemCount: notificationHistory.length,
+              itemBuilder: (context, index) {
+                final notification = notificationHistory[index];
+                return Dismissible(
+                  key: Key(notification.timestamp),
+                  onDismissed: (direction) {
+                    settings.removeNotification(notification);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Notification dismissed')),
+                    );
+                  },
+                  background: Container(color: Colors.red),
+                  child: Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.notifications_sharp),
+                      title: Text(notification.title),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(notification.subtitle),
+                          Text(
+                            notification.timestamp,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.withOpacity(0.6),
+                            ),
+                          ),
+                        ],
+                      ),
+                      onTap: () => notification.tap(),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
         ),
       ),
     );

@@ -104,9 +104,9 @@ class _Application extends State<Application> with WidgetsBindingObserver {
     final lightModeScheme = ColorScheme.light(
       primary: flutterBlue,
       onPrimary: Colors.white,
-      secondary: Color.fromARGB(255, 200, 200, 200),
+      secondary: Color.fromARGB(255, 240, 240, 240),
       onSecondary: Colors.black,
-      surface: const Color.fromARGB(255, 22, 30, 39),
+      surface: const Color.fromARGB(255, 255, 255, 255),
     );
 
     final darkModeScheme = ColorScheme.dark(

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:blue_notify/settings.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:developer' as developer;
@@ -8,7 +10,15 @@ const maxNotificationsToKeep = 100;
 
 Future<bool> checkNotificationPermission() async {
   var permissions =
-      await FirebaseMessaging.instance.requestPermission(provisional: true);
+      await FirebaseMessaging.instance.requestPermission(
+    alert: true,
+    announcement: false,
+    badge: true,
+    carPlay: false,
+    criticalAlert: false,
+    provisional: false,
+    sound: true,
+  );
   if (permissions.authorizationStatus != AuthorizationStatus.authorized) {
     developer.log('Notifications not authorized.');
     return false;
@@ -91,9 +101,16 @@ class Notification {
     if (url != null) {
       print('Opening URL: $url');
       final Uri uri = Uri.parse(url!);
+      if (Platform.isIOS) {
+        if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+          print('Could not launch $uri');
+          return;
+        }
+      } else {
       if (!await launchUrl(uri)) {
         print('Could not launch $uri');
         return;
+      }
       }
     } else {
       developer.log('No URL to open.');

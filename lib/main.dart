@@ -13,7 +13,7 @@ import 'dart:developer' as developer;
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await settings.init();
 
   developer.log("Handling a background message");

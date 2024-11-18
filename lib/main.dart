@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'dart:developer' as developer;
+import 'dart:io';
 
 
 @pragma('vm:entry-point')
@@ -163,30 +164,26 @@ class _NavigationState extends State<Navigation> {
         },
         indicatorColor: Theme.of(context).colorScheme.secondary,
         selectedIndex: currentPageIndex,
-        destinations: const <Widget>[
-          NavigationDestination(
-            selectedIcon: Icon(Icons.home),
-            icon: Icon(Icons.home),
-            label: 'Overview',
-          ),
-          NavigationDestination(
+        destinations: <Widget>[
+          if (!Platform.isIOS)
+            const NavigationDestination(
+              selectedIcon: Icon(Icons.home),
+              icon: Icon(Icons.home),
+              label: 'Overview',
+            ),
+          const NavigationDestination(
             icon: Icon(Icons.notification_add),
             label: 'Edit Notifications',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.settings),
             label: 'Settings',
           ),
         ],
       ),
       body: <Widget>[
-        /// Home page
-        OverviewPage(),
-
-        /// Notifications page
+        if (!Platform.isIOS) OverviewPage(),
         NotificationPage(),
-
-        /// Settings page
         SettingsPage(),
       ][currentPageIndex],
     );

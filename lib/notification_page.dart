@@ -57,8 +57,12 @@ class _NotificationPageState extends State<NotificationPage> {
       body: Consumer<Settings>(builder: (context, settings, child) {
         final notificationSettings = settings.notificationSettings;
         return ListView.builder(
-          itemCount: notificationSettings.length,
+          itemCount:
+              notificationSettings.length + 1, // Add one for the blank space
           itemBuilder: (context, index) {
+            if (index == notificationSettings.length) {
+              return const SizedBox(height: 80); // Blank space at the bottom
+            }
             final setting = notificationSettings[index];
             return ExpansionTile(
               title: UsernameDisplay.fromNotificationSetting(setting),

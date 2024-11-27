@@ -1,125 +1,191 @@
+import 'package:blue_notify/notification.dart';
+import 'package:blue_notify/notification_page.dart';
+import 'package:blue_notify/settings.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'overview_page.dart';
+import 'settings_page.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'dart:developer' as developer;
+import 'dart:io';
 
-void main() {
-  runApp(const MyApp());
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await settings.init();
+
+  developer.log("Handling a background message");
+  catalogNotification(message);
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  await settings.init();
+  await FirebaseMessaging.instance.setAutoInitEnabled(true);
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  runApp(Application());
+}
 
-  // This widget is the root of your application.
+class Application extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
+  State<StatefulWidget> createState() => _Application();
+}
+
+class _Application extends State<Application> with WidgetsBindingObserver {
+  Key key = UniqueKey();
+  bool closed = false;
+
+  Future<void> setupInteractedMessage() async {
+    RemoteMessage? initialMessage =
+        await FirebaseMessaging.instance.getInitialMessage();
+
+    if (initialMessage != null) {
+      _handleMessage(initialMessage);
+    }
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
   }
-}
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+  void _handleMessage(RemoteMessage message) async {
+    developer.log('Tapped a message!');
+    final notification = messageToNotification(message);
+    if (notification == null) {
+      return;
+    }
+    await notification.tap();
+  }
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Run code required to handle interacted messages in an async function
+    // as initState() must not be async
+    setupInteractedMessage();
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      developer.log('Got a message whilst in the foreground!');
+      if (message.notification != null) {
+        catalogNotification(message);
+      }
     });
   }
 
   @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state == AppLifecycleState.resumed) {
+      if (closed) {
+        closed = false;
+        developer.log('App resumed, reloading settings');
+        await settings.reload();
+        setState(() {
+          key = UniqueKey();
+        });
+      }
+    } else if (state == AppLifecycleState.paused) {
+      developer.log('App paused.');
+      closed = true;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    const flutterBlue = Color.fromARGB(255, 32, 139, 254);
+
+    final lightModeScheme = ColorScheme.light(
+      primary: flutterBlue,
+      onPrimary: Colors.white,
+      secondary: Color.fromARGB(255, 240, 240, 240),
+      onSecondary: Colors.black,
+      surface: const Color.fromARGB(255, 255, 255, 255),
+    );
+
+    final darkModeScheme = ColorScheme.dark(
+      primary: flutterBlue,
+      onPrimary: Colors.white,
+      secondary: Color.fromARGB(255, 30, 41, 54),
+      onSecondary: Colors.white,
+      surface: const Color.fromARGB(255, 22, 30, 39),
+      outlineVariant: Color.fromARGB(255, 30, 41, 54),
+    );
+
+    final app = MaterialApp(
+      title: 'BlueNotify - Bluesky Notifications',
+      key: key,
+      theme: ThemeData(
+        colorScheme: lightModeScheme,
+        useMaterial3: true,
+      ),
+      darkTheme: ThemeData(
+        colorScheme: darkModeScheme,
+        useMaterial3: true,
+      ),
+      themeMode: ThemeMode.system,
+      home: const Navigation(),
+    );
+
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => settings),
+      ],
+      child: app,
+    );
+  }
+}
+
+class Navigation extends StatefulWidget {
+  const Navigation({super.key});
+
+  @override
+  State<Navigation> createState() => _NavigationState();
+}
+
+class _NavigationState extends State<Navigation> {
+  int currentPageIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+      bottomNavigationBar: NavigationBar(
+        onDestinationSelected: (int index) {
+          setState(() {
+            currentPageIndex = index;
+          });
+        },
+        indicatorColor: Theme.of(context).colorScheme.secondary,
+        selectedIndex: currentPageIndex,
+        destinations: <Widget>[
+          if (!Platform.isIOS)
+            const NavigationDestination(
+              selectedIcon: Icon(Icons.home),
+              icon: Icon(Icons.home),
+              label: 'Overview',
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
+          const NavigationDestination(
+            icon: Icon(Icons.notification_add),
+            label: 'Edit Notifications',
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      body: <Widget>[
+        if (!Platform.isIOS) OverviewPage(),
+        NotificationPage(),
+        SettingsPage(),
+      ][currentPageIndex],
     );
   }
 }

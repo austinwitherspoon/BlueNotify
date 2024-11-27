@@ -155,6 +155,14 @@ class _NavigationState extends State<Navigation> {
 
   @override
   Widget build(BuildContext context) {
+
+    bool isIOS = false;
+    try {
+      if (Platform.isIOS) {
+        isIOS = true;
+      }
+    } catch (e) {}
+
     return Scaffold(
       bottomNavigationBar: NavigationBar(
         onDestinationSelected: (int index) {
@@ -165,7 +173,7 @@ class _NavigationState extends State<Navigation> {
         indicatorColor: Theme.of(context).colorScheme.secondary,
         selectedIndex: currentPageIndex,
         destinations: <Widget>[
-          if (!Platform.isIOS)
+          if (!isIOS)
             const NavigationDestination(
               selectedIcon: Icon(Icons.home),
               icon: Icon(Icons.home),
@@ -182,7 +190,7 @@ class _NavigationState extends State<Navigation> {
         ],
       ),
       body: <Widget>[
-        if (!Platform.isIOS) OverviewPage(),
+        if (!isIOS) OverviewPage(),
         NotificationPage(),
         SettingsPage(),
       ][currentPageIndex],

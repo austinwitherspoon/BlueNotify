@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:blue_notify/settings.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:url_launcher/url_launcher.dart';
 
@@ -23,8 +24,15 @@ Future<bool> checkNotificationPermission() async {
     developer.log('Notifications not authorized.');
     return false;
   }
-
-  var token = await FirebaseMessaging.instance.getToken();
+  String? token;
+  if (kIsWeb) {
+    token = await FirebaseMessaging.instance.getToken(
+        vapidKey:
+            "BCZ1teaHiX4IfEBaVnYAzWEbuHvBFryInhf9gf0qVHORHB7j9Mlkr59PAmgvMJD-vMRzaAqYkumtRHNNqo93H2I");
+  } else {
+    token = await FirebaseMessaging.instance.getToken();
+  }
+  
   developer.log('Token: $token');
   if (token == null) {
     developer.log('No token, returning.');

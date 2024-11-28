@@ -98,6 +98,15 @@ class _AccountPageState extends State<AccountPage> {
         _usernameController.text = username;
       }
 
+      // remove any leading @ symbol
+      if (username.startsWith("@")) {
+        username = username.substring(1);
+        _usernameController.text = username;
+      }
+
+      // remove any spaces
+      username = username.replaceAll(" ", "");
+
       // force the username to lowercase
       username = username.toLowerCase();
 

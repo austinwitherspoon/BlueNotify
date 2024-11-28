@@ -56,6 +56,8 @@ class _NotificationPageState extends State<NotificationPage> {
       ),
       body: Consumer<Settings>(builder: (context, settings, child) {
         final notificationSettings = settings.notificationSettings;
+        notificationSettings.sort((a, b) => (a.cachedName ?? a.cachedHandle)
+            .compareTo(b.cachedName ?? b.cachedHandle));
         return ListView.builder(
           itemCount:
               notificationSettings.length + 1, // Add one for the blank space

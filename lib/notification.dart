@@ -148,6 +148,22 @@ class Notification {
       json['type'],
     );
   }
+
+  String get friendlyTimestamp {
+    final parsed = DateTime.parse(timestamp);
+    final now = DateTime.now();
+    final difference = now.difference(parsed);
+    if (difference.inDays > 0) {
+      return '${difference.inDays} days ago';
+    }
+    if (difference.inHours > 0) {
+      return '${difference.inHours} hours ago';
+    }
+    if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} minutes ago';
+    }
+    return 'Just now';
+  }
   
 
   @override

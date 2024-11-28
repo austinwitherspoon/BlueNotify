@@ -98,6 +98,9 @@ class _AccountPageState extends State<AccountPage> {
         _usernameController.text = username;
       }
 
+      // force the username to lowercase
+      username = username.toLowerCase();
+
       final account = AccountReference(username, "");
 
       try {

@@ -156,9 +156,12 @@ class Settings with ChangeNotifier {
     return _notificationSettings!;
   }
 
-  Future<void> addNotificationSetting(NotificationSetting setting) async {
+  Future<void> addNotificationSetting(NotificationSetting setting,
+      {bool save = true}) async {
     notificationSettings.add(setting);
-    await saveNotificationSettings();
+    if (save) {
+      await saveNotificationSettings();
+    }
   }
 
   NotificationSetting? getNotificationSetting(

@@ -18,7 +18,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await settings.init();
 
   developer.log("Handling a background message");
-  catalogNotification(message);
+  await catalogNotification(message);
 }
 
 void main() async {

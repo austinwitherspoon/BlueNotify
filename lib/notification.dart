@@ -34,7 +34,8 @@ Future<bool> checkNotificationPermission() async {
   return true;
 }
 
-void catalogNotification(RemoteMessage message) {
+Future<void> catalogNotification(RemoteMessage message) async {
+  await settings.reload();
   developer.log('Saving notification..');
   final notification = messageToNotification(message);
   if (notification == null) {
@@ -42,7 +43,7 @@ void catalogNotification(RemoteMessage message) {
     return;
   }
   developer.log('Saved notification: $notification');
-  settings.addNotification(notification);
+  await settings.addNotification(notification);
 }
 
 Notification? messageToNotification(RemoteMessage message) {
@@ -99,16 +100,16 @@ class Notification {
   Future<void> tap() async {
     developer.log('Tapped notification: $this');
     if (url != null) {
-      print('Opening URL: $url');
+      developer.log('Opening URL: $url');
       final Uri uri = Uri.parse(url!);
       if (Platform.isIOS) {
         if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-          print('Could not launch $uri');
+          developer.log('Could not launch $uri');
           return;
         }
       } else {
       if (!await launchUrl(uri)) {
-        print('Could not launch $uri');
+          developer.log('Could not launch $uri');
         return;
       }
       }

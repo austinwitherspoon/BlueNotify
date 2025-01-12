@@ -10,7 +10,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'dart:developer' as developer;
 import 'dart:io';
-
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -18,7 +18,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await settings.init();
 
   developer.log("Handling a background message");
-  catalogNotification(message);
+  await catalogNotification(message);
 }
 
 void main() async {
@@ -29,7 +29,16 @@ void main() async {
   await settings.init();
   await FirebaseMessaging.instance.setAutoInitEnabled(true);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  runApp(Application());
+
+  await SentryFlutter.init(
+    (options) {
+      options.dsn =
+          'https://1c06795ba1343fab680c51fb8e1a8b6d@o565526.ingest.us.sentry.io/4508434436718592';
+      options.tracesSampleRate = 0.2;
+      options.profilesSampleRate = 0.1;
+    },
+    appRunner: () => runApp(Application()),
+  );
 }
 
 class Application extends StatefulWidget {
@@ -155,7 +164,6 @@ class _NavigationState extends State<Navigation> {
 
   @override
   Widget build(BuildContext context) {
-
     bool isIOS = false;
     try {
       if (Platform.isIOS) {

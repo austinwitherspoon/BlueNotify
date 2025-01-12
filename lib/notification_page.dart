@@ -1,9 +1,12 @@
+import 'dart:collection';
+
 import 'package:blue_notify/bluesky.dart';
 import 'package:blue_notify/notification.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'settings.dart';
 
+import 'dart:developer' as developer;
 
 class UsernameDisplay extends StatelessWidget {
   final String username;
@@ -31,8 +34,13 @@ class UsernameDisplay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(displayName ?? username, softWrap: true),
-        Text(username, style: const TextStyle(fontSize: 12)),
+        Text(
+          displayName ?? username,
+          softWrap: true,
+          textAlign: TextAlign.center,
+        ),
+        Text(username,
+            style: const TextStyle(fontSize: 12), textAlign: TextAlign.center),
       ],
     );
   }
@@ -47,6 +55,7 @@ class NotificationPage extends StatefulWidget {
 
 class _NotificationPageState extends State<NotificationPage> {
   String searchQuery = '';
+  HashSet<String> expandedDids = HashSet();
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +65,10 @@ class _NotificationPageState extends State<NotificationPage> {
       ),
       body: Consumer<Settings>(builder: (context, settings, child) {
         final notificationSettings = settings.notificationSettings;
+
+        notificationSettings.sort((a, b) => (a.cachedName ?? a.cachedHandle)
+            .toLowerCase()
+            .compareTo((b.cachedName ?? b.cachedHandle).toLowerCase()));
         return ListView.builder(
           itemCount:
               notificationSettings.length + 1, // Add one for the blank space
@@ -64,11 +77,25 @@ class _NotificationPageState extends State<NotificationPage> {
               return const SizedBox(height: 80); // Blank space at the bottom
             }
             final setting = notificationSettings[index];
+            var expanded = expandedDids.contains(setting.followDid);
             return ExpansionTile(
               title: UsernameDisplay.fromNotificationSetting(setting),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10.0),
               ),
+              key:
+                  GlobalKey(), // This is a workaround to fix the issue of ExpansionTile not expanding when the list is updated
+              onExpansionChanged: (expanded) {
+                setState(() {
+                  if (expanded) {
+                    expandedDids.add(setting.followDid);
+                  } else {
+                    expandedDids.remove(setting.followDid);
+                  }
+                });
+              },
+              maintainState: false,
+              initiallyExpanded: expanded,
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -166,24 +193,24 @@ class _NotificationPageState extends State<NotificationPage> {
       account = accounts.first;
     } else {
       var ask_for_account = await showDialog<AccountReference>(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
             title: const Text("Choose one of your accounts to use:"),
-                content: SingleChildScrollView(
-                  child: ListBody(
-                    children: accounts.map((account) {
-                      return ListTile(
-                        title: Text(account.login),
-                        onTap: () {
-                          Navigator.of(context).pop(account);
-                        },
-                      );
-                    }).toList(),
-                  ),
-                ),
-              );
-            },
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: accounts.map((account) {
+                  return ListTile(
+                    title: Text(account.login),
+                    onTap: () {
+                      Navigator.of(context).pop(account);
+                    },
+                  );
+                }).toList(),
+              ),
+            ),
+          );
+        },
       );
       if (ask_for_account == null) {
         return;
@@ -194,8 +221,7 @@ class _NotificationPageState extends State<NotificationPage> {
     showLoadingDialog(context);
     final service = await BlueskyService.getPublicConnection();
     final following = await service.getFollowingForUser(account.did);
-    following.sort((a, b) =>
-        (a.sortName()).compareTo(b.sortName()));
+    following.sort((a, b) => (a.sortName()).compareTo(b.sortName()));
 
     print(following);
     // while we have the data, update handles and display names for existing profiles
@@ -235,19 +261,20 @@ class _NotificationPageState extends State<NotificationPage> {
       return;
     }
 
+    var selectedProfiles = <Profile>[];
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text("Choose a user to receive notifications for:"),
+              title: const Text("Choose users to receive notifications for:"),
               content: Column(
                 children: [
                   TextField(
                     decoration: const InputDecoration(
                       labelText: 'Search',
-                      hintText: 'Search for a user',
+                      hintText: 'Search for users',
                     ),
                     onChanged: (value) {
                       setState(() {
@@ -268,17 +295,17 @@ class _NotificationPageState extends State<NotificationPage> {
                                         .contains(searchQuery) ??
                                     false))
                             .map((profile) {
-                          return ListTile(
+                          return CheckboxListTile(
                             title: UsernameDisplay.fromProfile(profile),
-                            onTap: () async {
-                              final newSetting = NotificationSetting(
-                                  profile.did,
-                                  account.did,
-                                  profile.handle,
-                                  profile.displayName,
-                                  {}..addAll(defaultNotificationSettings));
-                              Navigator.of(context).pop();
-                              await settings.addNotificationSetting(newSetting);
+                            value: selectedProfiles.contains(profile),
+                            onChanged: (bool? value) {
+                              setState(() {
+                                if (value == true) {
+                                  selectedProfiles.add(profile);
+                                } else {
+                                  selectedProfiles.remove(profile);
+                                }
+                              });
                             },
                           );
                         }).toList(),
@@ -287,6 +314,32 @@ class _NotificationPageState extends State<NotificationPage> {
                   ),
                 ],
               ),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text("Cancel"),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: const Text("Add"),
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    for (var profile in selectedProfiles) {
+                      final newSetting = NotificationSetting(
+                          profile.did,
+                          account.did,
+                          profile.handle,
+                          profile.displayName,
+                          {}..addAll(defaultNotificationSettings));
+                      await settings.addNotificationSetting(newSetting,
+                          save: false);
+                      expandedDids.add(newSetting.followDid);
+                    }
+                    await settings.saveNotificationSettings();
+                  },
+                ),
+              ],
             );
           },
         );

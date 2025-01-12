@@ -70,7 +70,7 @@ class _OverviewPageState extends State<OverviewPage> {
                               children: [
                                 Text(notification.subtitle),
                                 Text(
-                                  notification.timestamp,
+                                  notification.friendlyTimestamp,
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey.withOpacity(0.6),
@@ -93,5 +93,4 @@ class _OverviewPageState extends State<OverviewPage> {
       ),
     );
   }
-
 }

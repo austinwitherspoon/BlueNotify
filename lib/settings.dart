@@ -99,8 +99,8 @@ class Settings with ChangeNotifier {
   }
 
   void saveAccounts() {
-    _sharedPrefs!.setStringList(
-        'accounts', accounts.map((e) => jsonEncode(e)).toList());
+    _sharedPrefs!
+        .setStringList('accounts', accounts.map((e) => jsonEncode(e)).toList());
     notifyListeners();
   }
 
@@ -125,7 +125,7 @@ class Settings with ChangeNotifier {
   void loadNotificationSettings() {
     _notificationSettings =
         _sharedPrefs!.getStringList('notificationSettings')?.map((e) {
-      return NotificationSetting.fromJson(jsonDecode(e));
+              return NotificationSetting.fromJson(jsonDecode(e));
             }).toList() ??
             [];
     _notificationSettings!.sort((a, b) => (a.cachedName ?? a.cachedHandle)
@@ -156,9 +156,12 @@ class Settings with ChangeNotifier {
     return _notificationSettings!;
   }
 
-  Future<void> addNotificationSetting(NotificationSetting setting) async {
+  Future<void> addNotificationSetting(NotificationSetting setting,
+      {bool save = true}) async {
     notificationSettings.add(setting);
-    await saveNotificationSettings();
+    if (save) {
+      await saveNotificationSettings();
+    }
   }
 
   NotificationSetting? getNotificationSetting(

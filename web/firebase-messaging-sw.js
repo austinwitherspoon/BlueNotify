@@ -1,3 +1,15 @@
+self.addEventListener('notificationclick', (event) => {
+    const clickedNotification = event.notification;
+
+    console.log('Notification Click.', event.notification);
+
+    const url = clickedNotification.data?.FCM_MSG?.data?.url || "/";
+    console.log('Notification url:', url);
+    const promiseChain = clients.openWindow(url);
+    event.waitUntil(promiseChain);
+});
+
+
 importScripts("https://www.gstatic.com/firebasejs/9.10.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/9.10.0/firebase-messaging-compat.js");
 
@@ -16,14 +28,4 @@ const messaging = firebase.messaging();
 // Optional:
 messaging.onBackgroundMessage((message) => {
     console.log("onBackgroundMessage", message);
-});
-
-self.addEventListener('notificationclick', (event) => {
-    const clickedNotification = event.notification;
-
-    console.log('Notification Click.', event.notification);
-
-    const url = clickedNotification.data?.url || "/";
-    const promiseChain = clients.openWindow(url);
-    event.waitUntil(promiseChain);
 });

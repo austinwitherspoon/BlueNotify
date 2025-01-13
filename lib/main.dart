@@ -11,6 +11,7 @@ import 'firebase_options.dart';
 import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -181,7 +182,7 @@ class _NavigationState extends State<Navigation> {
         indicatorColor: Theme.of(context).colorScheme.secondary,
         selectedIndex: currentPageIndex,
         destinations: <Widget>[
-          if (!isIOS)
+          if (!isIOS && !kIsWeb)
             const NavigationDestination(
               selectedIcon: Icon(Icons.home),
               icon: Icon(Icons.home),
@@ -198,7 +199,7 @@ class _NavigationState extends State<Navigation> {
         ],
       ),
       body: <Widget>[
-        if (!isIOS) OverviewPage(),
+        if (!isIOS && !kIsWeb) OverviewPage(),
         NotificationPage(),
         SettingsPage(),
       ][currentPageIndex],

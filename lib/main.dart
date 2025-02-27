@@ -76,6 +76,7 @@ void main() async {
       options.dsn = SENTRY_DSN;
       options.tracesSampleRate = 0.2;
       options.profilesSampleRate = 0.1;
+      options.sampleRate = 1.0;
     },
     appRunner: () => runApp(Application()),
   );
@@ -104,8 +105,12 @@ class _Application extends State<Application> with WidgetsBindingObserver {
     developer.log('Tapped a message!');
     final notification = messageToNotification(message);
     if (notification == null) {
+      Sentry.captureMessage(
+          'No notification available to tap! Raw message: $message',
+          level: SentryLevel.error);
       return;
     }
+    developer.log('Tapped notification: $notification');
     await notification.tap();
   }
 

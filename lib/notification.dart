@@ -4,6 +4,7 @@ import 'package:blue_notify/settings.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
@@ -100,6 +101,8 @@ class Notification {
         }
       }
     } else {
+      Sentry.captureMessage('No URL to open! Notification: $this',
+          level: SentryLevel.error);
       developer.log('No URL to open.');
     }
   }

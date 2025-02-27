@@ -65,16 +65,8 @@ Notification? messageToNotification(RemoteMessage message) {
   final subtitle =
       rawNotification.body ?? data["text"] ?? '[No notification body!]';
   final url = data['url'];
-  final postId = data['post_id'];
-  final postUserHandle = data['post_user_handle'];
-  final postUserDid = data['post_user_did'];
-  final userHandle = data['user_handle'];
-  final userDid = data['user_did'];
-  final text = data['text'];
-  final type = data['type'];
   final timestamp = DateTime.now().toIso8601String();
-  final notification = Notification(timestamp, title, subtitle, url, postId,
-      postUserHandle, postUserDid, userHandle, userDid, text, type);
+  final notification = Notification(timestamp, title, subtitle, url);
   return notification;
 }
 
@@ -83,26 +75,13 @@ class Notification {
   final String title;
   final String subtitle;
   final String? url;
-  final String? postId;
-  final String? postUserHandle;
-  final String? postUserDid;
-  final String? userHandle;
-  final String? userDid;
-  final String? text;
-  final String? type;
 
   Notification(
-      this.timestamp,
-      this.title,
-      this.subtitle,
-      this.url,
-      this.postId,
-      this.postUserHandle,
-      this.postUserDid,
-      this.userHandle,
-      this.userDid,
-      this.text,
-      this.type);
+    this.timestamp,
+    this.title,
+    this.subtitle,
+    this.url,
+  );
 
   Future<void> tap() async {
     developer.log('Tapped notification: $this');
@@ -130,13 +109,6 @@ class Notification {
       'title': title,
       'subtitle': subtitle,
       'url': url,
-      'postId': postId,
-      'postUserHandle': postUserHandle,
-      'postUserDid': postUserDid,
-      'userHandle': userHandle,
-      'userDid': userDid,
-      'text': text,
-      'type': type,
       'timestamp': timestamp,
     };
   }
@@ -147,13 +119,6 @@ class Notification {
       json['title'],
       json['subtitle'],
       json['url'],
-      json['postId'],
-      json['postUserHandle'],
-      json['postUserDid'],
-      json['userHandle'],
-      json['userDid'],
-      json['text'],
-      json['type'],
     );
   }
 
@@ -175,6 +140,6 @@ class Notification {
 
   @override
   String toString() {
-    return 'Notification{timestamp: $timestamp, title: $title, subtitle: $subtitle, url: $url, postId: $postId, postUserHandle: $postUserHandle, postUserDid: $postUserDid, userHandle: $userHandle, userDid: $userDid, text: $text, type: $type}';
+    return 'Notification{timestamp: $timestamp, title: $title, subtitle: $subtitle, url: $url}';
   }
 }

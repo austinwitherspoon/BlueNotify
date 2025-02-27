@@ -49,4 +49,5 @@ app.*.map.json
 **/ephemeral
 
 macos/
+linux/
 .env

@@ -12,14 +12,53 @@ import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:sentry/sentry.dart';
+
+const SENTRY_DSN =
+    'https://1c06795ba1343fab680c51fb8e1a8b6d@o565526.ingest.us.sentry.io/4508434436718592';
+
+Future<void> configSentryUser() async {
+  var blueskyDid = settings.accounts.firstOrNull?.did;
+  var blueskyHandle = settings.accounts.firstOrNull?.login;
+  String? token;
+  if (kIsWeb) {
+    token = await FirebaseMessaging.instance.getToken(
+        vapidKey:
+            "BCZ1teaHiX4IfEBaVnYAzWEbuHvBFryInhf9gf0qVHORHB7j9Mlkr59PAmgvMJD-vMRzaAqYkumtRHNNqo93H2I");
+  } else {
+    token = await FirebaseMessaging.instance.getToken();
+  }
+  Sentry.configureScope((scope) {
+    scope.setUser(
+        SentryUser(id: token, username: blueskyDid, name: blueskyHandle));
+  });
+}
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await settings.init();
+  try {
+    await SentryFlutter.init(
+      (options) {
+        options.dsn = SENTRY_DSN;
+        options.tracesSampleRate = 0.2;
+        options.profilesSampleRate = 0.1;
+        options.sampleRate = 1.0;
+      },
+    );
+    await configSentryUser();
+    await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform);
+    await settings.init();
 
-  developer.log("Handling a background message");
-  await catalogNotification(message);
+    developer.log("Handling a background message");
+    await catalogNotification(message);
+  } catch (e, stackTrace) {
+    developer.log('Error handling background message: $e');
+    await Sentry.captureException(
+      e,
+      stackTrace: stackTrace,
+    );
+  }
 }
 
 void main() async {
@@ -31,10 +70,10 @@ void main() async {
   await FirebaseMessaging.instance.setAutoInitEnabled(true);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
+  await configSentryUser();
   await SentryFlutter.init(
     (options) {
-      options.dsn =
-          'https://1c06795ba1343fab680c51fb8e1a8b6d@o565526.ingest.us.sentry.io/4508434436718592';
+      options.dsn = SENTRY_DSN;
       options.tracesSampleRate = 0.2;
       options.profilesSampleRate = 0.1;
     },

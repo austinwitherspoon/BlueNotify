@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:blue_notify/bluesky.dart';
+import 'package:blue_notify/main.dart';
 import 'package:blue_notify/notification.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -137,6 +138,7 @@ class Settings with ChangeNotifier {
         notificationSettings.map((e) => jsonEncode(e)).toList());
     notifyListeners();
     final fcmToken = (await FirebaseMessaging.instance.getToken())!;
+    await configSentryUser();
     CollectionReference subscriptions =
         FirebaseFirestore.instance.collection('subscriptions');
     var settings = {};

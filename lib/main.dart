@@ -45,10 +45,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         options.sampleRate = 1.0;
       },
     );
-    await configSentryUser();
     await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform);
     await settings.init();
+    await configSentryUser();
 
     developer.log("Handling a background message");
     await catalogNotification(message);

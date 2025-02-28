@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:blue_notify/settings.dart';
+import 'package:f_logs/f_logs.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -21,33 +22,33 @@ Future<bool> checkNotificationPermission() async {
     sound: true,
   );
   if (permissions.authorizationStatus != AuthorizationStatus.authorized) {
-    developer.log('Notifications not authorized.');
+    FLog.error(text: 'Notifications not authorized.');
     return false;
   }
   
   final token = await settings.getToken();
 
-  developer.log('Token: $token');
-  developer.log('Notifications authorized.');
+  FLog.info(text: 'Token: $token');
+  FLog.info(text: 'Notifications authorized.');
   return true;
 }
 
 Future<void> catalogNotification(RemoteMessage message) async {
   await settings.reload();
-  developer.log('Saving notification..');
+  FLog.info(text: 'Saving notification..');
   final notification = messageToNotification(message);
   if (notification == null) {
-    developer.log('No notification to save, returning.');
+    FLog.info(text: 'No notification to save, returning.');
     return;
   }
-  developer.log('Saved notification: $notification');
+  FLog.info(text: 'Saved notification: $notification');
   await settings.addNotification(notification);
 }
 
 Notification? messageToNotification(RemoteMessage message) {
   final rawNotification = message.notification;
   if (rawNotification == null) {
-    developer.log('No notification in message, returning.');
+    FLog.info(text: 'No notification in message, returning.');
     return null;
   }
   final data = message.data;
@@ -75,25 +76,25 @@ class Notification {
   );
 
   Future<void> tap() async {
-    developer.log('Tapped notification: $this');
+    FLog.info(text: 'Tapped notification: $this');
     if (url != null) {
-      developer.log('Opening URL: $url');
+      FLog.info(text: 'Opening URL: $url');
       final Uri uri = Uri.parse(url!);
       if (Platform.isIOS) {
         if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-          developer.log('Could not launch $uri');
+          FLog.error(text: 'Could not launch $uri');
           return;
         }
       } else {
         if (!await launchUrl(uri)) {
-          developer.log('Could not launch $uri');
+          FLog.info(text: 'Could not launch $uri');
           return;
         }
       }
     } else {
       Sentry.captureMessage('No URL to open! Notification: $this',
           level: SentryLevel.error);
-      developer.log('No URL to open.');
+      FLog.error(text: 'No URL to open! Notification: $this');
     }
   }
 

@@ -1,3 +1,4 @@
+import 'package:f_logs/f_logs.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'settings.dart';
@@ -119,7 +120,7 @@ class _AccountPageState extends State<AccountPage> {
           var profile = await con.getProfile(username);
           account.did = profile.did;
         } catch (e) {
-          developer.log("Invalid account!: $e", name: "AccountPage");
+          FLog.error(text: "Invalid account!: $e");
           setState(() {
             _formError = "Could not find account";
           });
@@ -127,7 +128,7 @@ class _AccountPageState extends State<AccountPage> {
           return;
         }
       } catch (e) {
-        developer.log("Failed to connect to bluesky: $e", name: "AccountPage");
+        FLog.error(text: "Failed to connect to bluesky: $e");
         setState(() {
           _formError = "Could not connect to bluesky: " + e.toString();
         });
@@ -157,7 +158,7 @@ class _AccountPageState extends State<AccountPage> {
   //       showAlertDialog(context);
   //       await LoggedInBlueskyService.login(account);
   //     } catch (e) {
-  //       developer.log("Failed to login: $e", name: "AccountPage");
+  //       FLog.info(text: "Failed to login: $e");
   //       setState(() {
   //         _formError = e.toString();
   //       });

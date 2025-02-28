@@ -40,6 +40,7 @@ dependencies:
   url_launcher: ^6.3.1
   cloud_firestore: ^5.4.5
   sentry_flutter: ^8.10.1
+  f_logs: ^2.0.1
 
 dev_dependencies:
   flutter_launcher_icons: "^0.13.1"

@@ -1,6 +1,7 @@
 import 'package:blue_notify/notification.dart';
 import 'package:blue_notify/notification_page.dart';
 import 'package:blue_notify/settings.dart';
+import 'package:f_logs/f_logs.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'overview_page.dart';
@@ -12,7 +13,6 @@ import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:sentry/sentry.dart';
 
 const dsn =
     'https://476441eeec8d8ababd12e7e148193d62@sentry.austinwitherspoon.com/2';
@@ -30,6 +30,7 @@ void configSentryUser() {
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
+    FLog.info(text: 'Handling a background message');
     await SentryFlutter.init(
       (options) {
         options.dsn = dsn;
@@ -42,11 +43,12 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         options: DefaultFirebaseOptions.currentPlatform);
     await settings.init();
     configSentryUser();
-
-    developer.log("Handling a background message");
+    var rawMessage = message.toMap();
+    FLog.info(text: 'About to catalog notification for $rawMessage');
     await catalogNotification(message);
   } catch (e, stackTrace) {
-    developer.log('Error handling background message: $e');
+    FLog.error(
+        text: 'Error handling background message: $e', stacktrace: stackTrace);
     await Sentry.captureException(
       e,
       stackTrace: stackTrace,
@@ -95,17 +97,28 @@ class _Application extends State<Application> with WidgetsBindingObserver {
   }
 
   void _handleMessage(RemoteMessage message) async {
-    developer.log('Tapped a message!');
-    final notification = messageToNotification(message);
-    final rawNotification = message.notification?.toMap();
-    if (notification == null) {
-      Sentry.captureMessage(
-          'No notification available to tap! Raw message: $rawNotification',
-          level: SentryLevel.error);
-      return;
+    try {
+      final rawNotification = message.notification?.toMap();
+      FLog.info(text: 'Tapped a message! $rawNotification');
+      final notification = messageToNotification(message);
+      if (notification == null) {
+        FLog.error(text: 'No notification available to tap!');
+        Sentry.captureMessage(
+            'No notification available to tap! Raw message: $rawNotification',
+            level: SentryLevel.error);
+        return;
+      }
+      FLog.info(
+          text: 'Triggering tap response for notification: $rawNotification');
+      await notification.tap();
+    } catch (e, stackTrace) {
+      FLog.error(
+          text: 'Error handling tapped message: $e', stacktrace: stackTrace);
+      await Sentry.captureException(
+        'Error handling tapped message: $e',
+        stackTrace: stackTrace,
+      );
     }
-    developer.log('Tapped notification: $rawNotification');
-    await notification.tap();
   }
 
   @override
@@ -116,7 +129,7 @@ class _Application extends State<Application> with WidgetsBindingObserver {
     // as initState() must not be async
     setupInteractedMessage();
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      developer.log('Got a message whilst in the foreground!');
+      FLog.info(text: 'Got a message whilst in the foreground!');
       if (message.notification != null) {
         catalogNotification(message);
       }
@@ -134,14 +147,14 @@ class _Application extends State<Application> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       if (closed) {
         closed = false;
-        developer.log('App resumed, reloading settings');
+        FLog.info(text: 'App resumed, reloading settings');
         await settings.reload();
         setState(() {
           key = UniqueKey();
         });
       }
     } else if (state == AppLifecycleState.paused) {
-      developer.log('App paused.');
+      FLog.info(text: 'App paused.');
       closed = true;
     }
   }

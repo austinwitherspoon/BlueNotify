@@ -2,8 +2,10 @@ import 'package:blue_notify/account_page.dart';
 import 'package:blue_notify/notification.dart';
 import 'package:blue_notify/settings.dart';
 import 'package:blue_notify/shoutout.dart';
+import 'package:f_logs/f_logs.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends StatelessWidget {
   @override
@@ -37,6 +39,24 @@ class SettingsPage extends StatelessWidget {
             ),
             ListTile(
               title: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.secondary,
+                      foregroundColor:
+                          Theme.of(context).colorScheme.onSecondary,
+                    ),
+                    onPressed: () async {
+                      await sendLogs();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content:
+                                Text('Logs sent to developer! Thank you!')),
+                      );
+                    },
+                    child: const Text("Send Logs to Developer"),
+                  ),
+                ),
+                ListTile(
+                  title: ElevatedButton(
                 child: const Text("Remove All Notification Settings"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.secondary,

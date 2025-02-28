@@ -3,10 +3,12 @@ import 'package:blue_notify/bluesky.dart';
 import 'package:blue_notify/main.dart';
 import 'package:blue_notify/notification.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:f_logs/f_logs.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:developer' as developer;
+import 'package:sentry/sentry_io.dart';
 
 final settings = Settings();
 
@@ -74,16 +76,36 @@ class NotificationSetting {
   }
 
   Future<void> addPostType(PostType value) async {
+    FLog.info(text: 'Adding post type $value for $followDid');
     _postTypes.add(value);
     await settings.saveNotificationSettings();
   }
 
   Future<void> removePostType(PostType value) async {
+    FLog.info(text: 'Removing post type $value for $followDid');
     _postTypes.remove(value);
     await settings.saveNotificationSettings();
   }
 }
+Future<void> sendLogs() async {
+  FLog.warning(text: 'Exporting logs');
+  var file = await FLog.exportLogs();
+  var text = await file.readAsString();
 
+  final attachment = IoSentryAttachment.fromPath(file.path);
+
+  // Send with sentry
+  Sentry.configureScope((scope) {
+    scope.addAttachment(attachment);
+  });
+  Sentry.captureMessage('User Sent Logs');
+
+  // and save to firestore
+  var logs = FirebaseFirestore.instance.collection('logs');
+  var token = await settings.getToken();
+  await logs.doc(token).set({'logs': text});
+  FLog.warning(text: 'Logs sent');
+}
 class Settings with ChangeNotifier {
   static SharedPreferences? _sharedPrefs;
   List<AccountReference>? _accounts = null;
@@ -94,12 +116,14 @@ class Settings with ChangeNotifier {
   }
 
   void loadAccounts() {
+    FLog.info(text: 'Loading accounts');
     _accounts = _sharedPrefs!.getStringList('accounts')?.map((e) {
       return AccountReference.fromJson(jsonDecode(e));
     }).toList();
   }
 
   void saveAccounts() {
+    FLog.info(text: 'Saving accounts');
     _sharedPrefs!
         .setStringList('accounts', accounts.map((e) => jsonEncode(e)).toList());
     notifyListeners();
@@ -126,6 +150,7 @@ class Settings with ChangeNotifier {
   }
 
   Future<String> getToken() async {
+    FLog.info(text: 'Getting FCM token');
     String? token;
     if (kIsWeb) {
       token = await FirebaseMessaging.instance.getToken(
@@ -137,20 +162,24 @@ class Settings with ChangeNotifier {
     if (token != null) {
       lastToken = token;
     }
+    FLog.info(text: 'FCM token: $token');
     return lastToken!;
   }
 
   void addAccount(AccountReference account) {
+    FLog.info(text: 'Adding account with DID: ${account.did}');
     accounts.add(account);
     saveAccounts();
   }
 
   void removeAccount(String did) {
+    FLog.info(text: 'Removing account with DID: $did');
     accounts.removeWhere((element) => element.did == did);
     saveAccounts();
   }
 
   void loadNotificationSettings() {
+    FLog.info(text: 'Loading notification settings');
     _notificationSettings =
         _sharedPrefs!.getStringList('notificationSettings')?.map((e) {
               return NotificationSetting.fromJson(jsonDecode(e));
@@ -161,6 +190,7 @@ class Settings with ChangeNotifier {
   }
 
   Future<void> saveNotificationSettings() async {
+    FLog.info(text: 'Saving notification settings');
     _sharedPrefs!.setStringList('notificationSettings',
         notificationSettings.map((e) => jsonEncode(e)).toList());
     notifyListeners();
@@ -173,8 +203,17 @@ class Settings with ChangeNotifier {
       settings[setting.followDid] = setting.toFirestore();
     }
     var account_dids = accounts.map((e) => e.did).toList();
+
+    var settings_data = {
+      'settings': settings,
+      "accounts": account_dids,
+      "fcmToken": fcmToken
+    };
+    FLog.info(text: 'Saving settings to firestore: $settings_data');
     await subscriptions.doc(fcmToken).set(
-        {'settings': settings, "accounts": account_dids, "fcmToken": fcmToken});
+        settings_data);
+
+    FLog.info(text: 'Notification settings saved');
   }
 
   List<NotificationSetting> get notificationSettings {
@@ -187,6 +226,7 @@ class Settings with ChangeNotifier {
 
   Future<void> addNotificationSetting(NotificationSetting setting,
       {bool save = true}) async {
+    FLog.info(text: 'Adding notification setting for ${setting.followDid}');
     notificationSettings.add(setting);
     if (save) {
       await saveNotificationSettings();
@@ -195,20 +235,25 @@ class Settings with ChangeNotifier {
 
   NotificationSetting? getNotificationSetting(
       String followDid, String accountDid) {
+    FLog.info(text: 'Getting notification setting for $followDid');
     for (final setting in notificationSettings) {
       if (setting.followDid == followDid && setting.accountDid == accountDid) {
+        FLog.info(text: 'Found notification setting for $followDid');
         return setting;
       }
     }
+    FLog.info(text: 'No notification setting found for $followDid');
     return null;
   }
 
   Future<void> removeNotificationSetting(String did) async {
+    FLog.info(text: 'Removing notification setting for $did');
     notificationSettings.removeWhere((element) => element.followDid == did);
     await saveNotificationSettings();
   }
 
   Future<void> removeAllNotificationSettings() async {
+    FLog.info(text: 'Removing all notification settings');
     _notificationSettings?.clear();
     await _sharedPrefs!.remove('notificationSettings');
     notifyListeners();
@@ -219,7 +264,7 @@ class Settings with ChangeNotifier {
   }
 
   List<Notification> get notificationHistory {
-    developer.log('Getting notification history');
+    FLog.info(text: 'Getting notification history');
     return _sharedPrefs!.getStringList('notificationHistory')?.map((e) {
           return Notification.fromJson(jsonDecode(e));
         }).toList() ??
@@ -232,6 +277,7 @@ class Settings with ChangeNotifier {
   }
 
   Future<void> addNotification(Notification notification) async {
+    FLog.info(text: 'Adding notification to history: $notification');
     final history = notificationHistory;
     history.insert(0, notification);
     if (history.length > maxNotificationsToKeep) {
@@ -240,9 +286,11 @@ class Settings with ChangeNotifier {
     await _sharedPrefs!.setStringList(
         'notificationHistory', history.map((e) => jsonEncode(e)).toList());
     notifyListeners();
+    FLog.info(text: 'Notification added to history: $notification');
   }
 
   Future<void> removeNotification(Notification notification) async {
+    FLog.info(text: 'Removing notification from history: $notification');
     final history = notificationHistory;
     final matching = history.firstWhere(
       (element) =>
@@ -257,11 +305,13 @@ class Settings with ChangeNotifier {
   }
 
   Future<void> clearNotificationHistory() async {
+    FLog.info(text: 'Clearing notification history');
     await _sharedPrefs!.setStringList('notificationHistory', []);
     notifyListeners();
   }
 
   Future<void> forceResync() async {
+    FLog.info(text: 'Forcing resync');
     await saveNotificationSettings();
   }
 }

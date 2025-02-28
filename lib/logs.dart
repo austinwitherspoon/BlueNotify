@@ -1,3 +1,4 @@
+import 'package:blue_notify/main.dart';
 import 'package:blue_notify/settings.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:f_logs/f_logs.dart';
@@ -12,13 +13,17 @@ class Logs {
     var text = await file.readAsString();
 
     final attachment = IoSentryAttachment.fromPath(file.path);
-
+    configSentryUser();
     // Send with sentry
     Sentry.configureScope((scope) {
       scope.addAttachment(attachment);
     });
     Sentry.captureMessage('User Sent Logs');
-
+    Sentry.configureScope((scope) {
+      scope.clear();
+    });
+    configSentryUser();
+    
     // and save to firestore
     var logs = FirebaseFirestore.instance.collection('logs');
     var token = await settings.getToken();

@@ -43,7 +43,11 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform);
     await settings.init();
+    try {
     configSentryUser();
+    } catch (e) {
+      Logs.error(text: 'Failed to configure sentry user: $e');
+    }
     var rawMessage = message.toMap();
     Logs.info(text: 'About to catalog notification for $rawMessage');
     await catalogNotification(message);
@@ -66,7 +70,11 @@ void main() async {
   await FirebaseMessaging.instance.setAutoInitEnabled(true);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  configSentryUser();
+  try {
+    configSentryUser();
+  } catch (e) {
+    Logs.error(text: 'Failed to configure sentry user: $e');
+  }
   await SentryFlutter.init(
     (options) {
       options.dsn = dsn;
@@ -99,6 +107,11 @@ class _Application extends State<Application> with WidgetsBindingObserver {
 
   void _handleMessage(RemoteMessage message) async {
     try {
+      try {
+        configSentryUser();
+      } catch (e) {
+        Logs.error(text: 'Failed to configure sentry user: $e');
+      }
       final rawNotification = message.notification?.toMap();
       Logs.info(text: 'Tapped a message! $rawNotification');
       final notification = messageToNotification(message);

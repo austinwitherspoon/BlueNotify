@@ -6,8 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'settings.dart';
 
-import 'dart:developer' as developer;
-
 class UsernameDisplay extends StatelessWidget {
   final String username;
   final String? displayName;

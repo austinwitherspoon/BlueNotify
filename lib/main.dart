@@ -1,7 +1,7 @@
+import 'package:blue_notify/logs.dart';
 import 'package:blue_notify/notification.dart';
 import 'package:blue_notify/notification_page.dart';
 import 'package:blue_notify/settings.dart';
-import 'package:f_logs/f_logs.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'overview_page.dart';
@@ -9,7 +9,6 @@ import 'settings_page.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -30,7 +29,7 @@ void configSentryUser() {
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
-    FLog.info(text: 'Handling a background message');
+    Logs.info(text: 'Handling a background message');
     await SentryFlutter.init(
       (options) {
         options.dsn = dsn;
@@ -39,7 +38,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         options.sampleRate = 1.0;
         options.experimental.replay.sessionSampleRate = 0.0;
         options.experimental.replay.onErrorSampleRate = 1.0;
-
       },
     );
     await Firebase.initializeApp(
@@ -47,10 +45,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     await settings.init();
     configSentryUser();
     var rawMessage = message.toMap();
-    FLog.info(text: 'About to catalog notification for $rawMessage');
+    Logs.info(text: 'About to catalog notification for $rawMessage');
     await catalogNotification(message);
   } catch (e, stackTrace) {
-    FLog.error(
+    Logs.error(
         text: 'Error handling background message: $e', stacktrace: stackTrace);
     await Sentry.captureException(
       e,
@@ -102,20 +100,20 @@ class _Application extends State<Application> with WidgetsBindingObserver {
   void _handleMessage(RemoteMessage message) async {
     try {
       final rawNotification = message.notification?.toMap();
-      FLog.info(text: 'Tapped a message! $rawNotification');
+      Logs.info(text: 'Tapped a message! $rawNotification');
       final notification = messageToNotification(message);
       if (notification == null) {
-        FLog.error(text: 'No notification available to tap!');
+        Logs.error(text: 'No notification available to tap!');
         Sentry.captureMessage(
             'No notification available to tap! Raw message: $rawNotification',
             level: SentryLevel.error);
         return;
       }
-      FLog.info(
+      Logs.info(
           text: 'Triggering tap response for notification: $rawNotification');
       await notification.tap();
     } catch (e, stackTrace) {
-      FLog.error(
+      Logs.error(
           text: 'Error handling tapped message: $e', stacktrace: stackTrace);
       await Sentry.captureException(
         'Error handling tapped message: $e',
@@ -132,7 +130,7 @@ class _Application extends State<Application> with WidgetsBindingObserver {
     // as initState() must not be async
     setupInteractedMessage();
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      FLog.info(text: 'Got a message whilst in the foreground!');
+      Logs.info(text: 'Got a message whilst in the foreground!');
       if (message.notification != null) {
         catalogNotification(message);
       }
@@ -150,14 +148,14 @@ class _Application extends State<Application> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       if (closed) {
         closed = false;
-        FLog.info(text: 'App resumed, reloading settings');
+        Logs.info(text: 'App resumed, reloading settings');
         await settings.reload();
         setState(() {
           key = UniqueKey();
         });
       }
     } else if (state == AppLifecycleState.paused) {
-      FLog.info(text: 'App paused.');
+      Logs.info(text: 'App paused.');
       closed = true;
     }
   }

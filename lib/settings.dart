@@ -113,6 +113,33 @@ class Settings with ChangeNotifier {
     return _accounts!;
   }
 
+  String? get lastToken {
+    return _sharedPrefs!.getString('lastToken');
+  }
+
+  set lastToken(String? token) {
+    if (token == null) {
+      _sharedPrefs!.remove('lastToken');
+      return;
+    }
+    _sharedPrefs!.setString('lastToken', token);
+  }
+
+  Future<String> getToken() async {
+    String? token;
+    if (kIsWeb) {
+      token = await FirebaseMessaging.instance.getToken(
+          vapidKey:
+              "BCZ1teaHiX4IfEBaVnYAzWEbuHvBFryInhf9gf0qVHORHB7j9Mlkr59PAmgvMJD-vMRzaAqYkumtRHNNqo93H2I");
+    } else {
+      token = await FirebaseMessaging.instance.getToken();
+    }
+    if (token != null) {
+      lastToken = token;
+    }
+    return lastToken!;
+  }
+
   void addAccount(AccountReference account) {
     accounts.add(account);
     saveAccounts();
@@ -137,8 +164,8 @@ class Settings with ChangeNotifier {
     _sharedPrefs!.setStringList('notificationSettings',
         notificationSettings.map((e) => jsonEncode(e)).toList());
     notifyListeners();
-    final fcmToken = (await FirebaseMessaging.instance.getToken())!;
-    await configSentryUser();
+    final fcmToken = await getToken();
+    configSentryUser();
     CollectionReference subscriptions =
         FirebaseFirestore.instance.collection('subscriptions');
     var settings = {};
@@ -185,7 +212,7 @@ class Settings with ChangeNotifier {
     _notificationSettings?.clear();
     await _sharedPrefs!.remove('notificationSettings');
     notifyListeners();
-    final fcmToken = (await FirebaseMessaging.instance.getToken())!;
+    final fcmToken = await getToken();
     CollectionReference subscriptions =
         FirebaseFirestore.instance.collection('subscriptions');
     await subscriptions.doc(fcmToken).delete();

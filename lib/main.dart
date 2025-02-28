@@ -17,17 +17,10 @@ import 'package:sentry/sentry.dart';
 const SENTRY_DSN =
     'https://1c06795ba1343fab680c51fb8e1a8b6d@o565526.ingest.us.sentry.io/4508434436718592';
 
-Future<void> configSentryUser() async {
+void configSentryUser() {
   var blueskyDid = settings.accounts.firstOrNull?.did;
   var blueskyHandle = settings.accounts.firstOrNull?.login;
-  String? token;
-  if (kIsWeb) {
-    token = await FirebaseMessaging.instance.getToken(
-        vapidKey:
-            "BCZ1teaHiX4IfEBaVnYAzWEbuHvBFryInhf9gf0qVHORHB7j9Mlkr59PAmgvMJD-vMRzaAqYkumtRHNNqo93H2I");
-  } else {
-    token = await FirebaseMessaging.instance.getToken();
-  }
+  String? token = settings.lastToken;
   Sentry.configureScope((scope) {
     scope.setUser(
         SentryUser(id: token, username: blueskyDid, name: blueskyHandle));
@@ -48,7 +41,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform);
     await settings.init();
-    await configSentryUser();
+    configSentryUser();
 
     developer.log("Handling a background message");
     await catalogNotification(message);
@@ -70,7 +63,7 @@ void main() async {
   await FirebaseMessaging.instance.setAutoInitEnabled(true);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  await configSentryUser();
+  configSentryUser();
   await SentryFlutter.init(
     (options) {
       options.dsn = SENTRY_DSN;
@@ -104,13 +97,14 @@ class _Application extends State<Application> with WidgetsBindingObserver {
   void _handleMessage(RemoteMessage message) async {
     developer.log('Tapped a message!');
     final notification = messageToNotification(message);
+    final rawNotification = message.notification?.toMap();
     if (notification == null) {
       Sentry.captureMessage(
-          'No notification available to tap! Raw message: $message',
+          'No notification available to tap! Raw message: $rawNotification',
           level: SentryLevel.error);
       return;
     }
-    developer.log('Tapped notification: $notification');
+    developer.log('Tapped notification: $rawNotification');
     await notification.tap();
   }
 

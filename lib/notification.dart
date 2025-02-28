@@ -24,20 +24,10 @@ Future<bool> checkNotificationPermission() async {
     developer.log('Notifications not authorized.');
     return false;
   }
-  String? token;
-  if (kIsWeb) {
-    token = await FirebaseMessaging.instance.getToken(
-        vapidKey:
-            "BCZ1teaHiX4IfEBaVnYAzWEbuHvBFryInhf9gf0qVHORHB7j9Mlkr59PAmgvMJD-vMRzaAqYkumtRHNNqo93H2I");
-  } else {
-    token = await FirebaseMessaging.instance.getToken();
-  }
+  
+  final token = await settings.getToken();
 
   developer.log('Token: $token');
-  if (token == null) {
-    developer.log('No token, returning.');
-    return false;
-  }
   developer.log('Notifications authorized.');
   return true;
 }

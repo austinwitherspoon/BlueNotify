@@ -34,9 +34,12 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     await SentryFlutter.init(
       (options) {
         options.dsn = dsn;
-        options.tracesSampleRate = 0.2;
+        options.tracesSampleRate = 0.3;
         options.profilesSampleRate = 0.1;
         options.sampleRate = 1.0;
+        options.experimental.replay.sessionSampleRate = 0.0;
+        options.experimental.replay.onErrorSampleRate = 1.0;
+
       },
     );
     await Firebase.initializeApp(

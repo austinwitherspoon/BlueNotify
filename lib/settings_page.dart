@@ -45,11 +45,14 @@ class SettingsPage extends StatelessWidget {
                           Theme.of(context).colorScheme.onSecondary,
                     ),
                     onPressed: () async {
-                      await Logs.sendLogs();
+                      var success = await Logs.sendLogs();
+                      var text = success
+                          ? 'Logs sent to developer! Thank you!'
+                          : 'Failed to send logs. :(';
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                             content:
-                                Text('Logs sent to developer! Thank you!')),
+                                Text(text)),
                       );
                     },
                     child: const Text("Send Logs to Developer"),

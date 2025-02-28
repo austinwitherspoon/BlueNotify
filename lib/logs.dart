@@ -7,28 +7,52 @@ import 'package:sentry/sentry_io.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 class Logs {
-  static Future<void> sendLogs() async {
+  static Future<bool> sendLogs() async {
     FLog.warning(text: 'Exporting logs');
     var file = await FLog.exportLogs();
     var text = await file.readAsString();
 
-    final attachment = IoSentryAttachment.fromPath(file.path);
-    configSentryUser();
-    // Send with sentry
-    Sentry.configureScope((scope) {
-      scope.addAttachment(attachment);
-    });
-    Sentry.captureMessage('User Sent Logs');
-    Sentry.configureScope((scope) {
-      scope.clear();
-    });
-    configSentryUser();
-    
+    var success = false;
+
+    try {
+      final attachment = IoSentryAttachment.fromPath(file.path);
+      configSentryUser();
+      // Send with sentry
+      Sentry.configureScope((scope) {
+        scope.addAttachment(attachment);
+      });
+      Sentry.captureMessage('User Sent Logs');
+      Sentry.configureScope((scope) {
+        scope.clear();
+      });
+      configSentryUser();
+      success = true;
+    } catch (e) {
+      FLog.warning(text: 'Error sending logs to sentry: $e');
+    }
+
+    try {
+      // limit to last 5000 lines
+      var lines = text.split('\n');
+      if (lines.length > 5000) {
+        text = lines.sublist(lines.length - 5000).join('\n');
+      }
+
     // and save to firestore
     var logs = FirebaseFirestore.instance.collection('logs');
     var token = await settings.getToken();
     await logs.doc(token).set({'logs': text});
-    FLog.warning(text: 'Logs sent');
+      success = true;
+    } catch (e) {
+      FLog.warning(text: 'Error sending logs to firestore: $e');
+    }
+    if (success) {
+      FLog.warning(text: 'Logs sent');
+      return true;
+    } else {
+      FLog.warning(text: 'Failed to send logs');
+      return false;
+    }
   }
 
   static void debug({

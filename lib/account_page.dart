@@ -1,8 +1,8 @@
+import 'package:blue_notify/logs.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'settings.dart';
 import 'package:blue_notify/bluesky.dart';
-import 'dart:developer' as developer;
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -119,7 +119,7 @@ class _AccountPageState extends State<AccountPage> {
           var profile = await con.getProfile(username);
           account.did = profile.did;
         } catch (e) {
-          developer.log("Invalid account!: $e", name: "AccountPage");
+          Logs.error(text: "Invalid account!: $e");
           setState(() {
             _formError = "Could not find account";
           });
@@ -127,7 +127,7 @@ class _AccountPageState extends State<AccountPage> {
           return;
         }
       } catch (e) {
-        developer.log("Failed to connect to bluesky: $e", name: "AccountPage");
+        Logs.error(text: "Failed to connect to bluesky: $e");
         setState(() {
           _formError = "Could not connect to bluesky: " + e.toString();
         });
@@ -157,7 +157,7 @@ class _AccountPageState extends State<AccountPage> {
   //       showAlertDialog(context);
   //       await LoggedInBlueskyService.login(account);
   //     } catch (e) {
-  //       developer.log("Failed to login: $e", name: "AccountPage");
+  //       Logs.info(text: "Failed to login: $e");
   //       setState(() {
   //         _formError = e.toString();
   //       });

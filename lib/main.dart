@@ -14,8 +14,8 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:sentry/sentry.dart';
 
-const SENTRY_DSN =
-    'https://1c06795ba1343fab680c51fb8e1a8b6d@o565526.ingest.us.sentry.io/4508434436718592';
+const dsn =
+    'https://476441eeec8d8ababd12e7e148193d62@sentry.austinwitherspoon.com/2';
 
 void configSentryUser() {
   var blueskyDid = settings.accounts.firstOrNull?.did;
@@ -32,7 +32,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
     await SentryFlutter.init(
       (options) {
-        options.dsn = SENTRY_DSN;
+        options.dsn = dsn;
         options.tracesSampleRate = 0.2;
         options.profilesSampleRate = 0.1;
         options.sampleRate = 1.0;
@@ -66,7 +66,7 @@ void main() async {
   configSentryUser();
   await SentryFlutter.init(
     (options) {
-      options.dsn = SENTRY_DSN;
+      options.dsn = dsn;
       options.tracesSampleRate = 0.2;
       options.profilesSampleRate = 0.1;
       options.sampleRate = 1.0;

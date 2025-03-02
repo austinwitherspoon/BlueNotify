@@ -12,6 +12,7 @@ import 'firebase_options.dart';
 import 'dart:io';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:receive_intent/receive_intent.dart';
 
 const dsn =
     'https://476441eeec8d8ababd12e7e148193d62@sentry.austinwitherspoon.com/2';
@@ -20,6 +21,8 @@ void configSentryUser() {
   var blueskyDid = settings.accounts.firstOrNull?.did;
   var blueskyHandle = settings.accounts.firstOrNull?.login;
   String? token = settings.lastToken;
+  Sentry.addBreadcrumb(Breadcrumb(
+      message: 'Configuring Sentry User: $blueskyDid $blueskyHandle $token'));
   Sentry.configureScope((scope) {
     scope.setUser(
         SentryUser(id: token, username: blueskyDid, name: blueskyHandle));
@@ -30,19 +33,19 @@ void configSentryUser() {
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
     Logs.info(text: 'Handling a background message');
+    await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform);
     await SentryFlutter.init(
       (options) {
         options.dsn = dsn;
         options.tracesSampleRate = 0.3;
         options.profilesSampleRate = 0.1;
         options.sampleRate = 1.0;
-        options.experimental.replay.sessionSampleRate = 0.0;
-        options.experimental.replay.onErrorSampleRate = 1.0;
       },
     );
-    await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform);
     await settings.init();
+    // sleep 3 seconds to give firebase a chance to load the message
+    await Future.delayed(const Duration(seconds: 3));
     try {
     configSentryUser();
     } catch (e) {
@@ -60,6 +63,16 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     );
   }
 }
+Future<void> _initReceiveIntent() async {
+  // Platform messages may fail, so we use a try/catch PlatformException.
+  Logs.warning(text: "2");
+  try {
+    final receivedIntent = await ReceiveIntent.getInitialIntent();
+    Logs.info(text: 'Received intent: $receivedIntent');
+  } catch (e) {
+    Logs.error(text: 'Failed to get initial intent: $e');
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -70,20 +83,91 @@ void main() async {
   await FirebaseMessaging.instance.setAutoInitEnabled(true);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
+  // manually extract the url as a backup in case firebase fails to load message
+  String? knownTapUrl;
+  bool isAndroid = false;
   try {
-    configSentryUser();
-  } catch (e) {
-    Logs.error(text: 'Failed to configure sentry user: $e');
+    if (Platform.isAndroid) {
+      isAndroid = true;
+    }
+  } catch (e) {}
+  if (isAndroid) {
+    // Try manually finding url from intent
+    try {
+      final intent = await ReceiveIntent.getInitialIntent();
+      final url = intent?.extra?['url'];
+      if (url != null) {
+        Logs.info(text: 'Found url in intent: $url');
+        knownTapUrl = url;
+      }
+    } catch (e) {
+      Logs.error(text: 'Failed to get initial intent: $e');
+    }
   }
+
+  if (knownTapUrl == null) {
+    // sleep for .5 seconds to give firebase a chance to load the message
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  RemoteMessage? remoteMessage =
+      await FirebaseMessaging.instance.getInitialMessage();
+  if (remoteMessage != null) {
+    await handleMessageTap(remoteMessage, fallbackUrl: knownTapUrl);
+  }
+
   await SentryFlutter.init(
     (options) {
       options.dsn = dsn;
       options.tracesSampleRate = 0.2;
       options.profilesSampleRate = 0.1;
       options.sampleRate = 1.0;
+      options.experimental.replay.sessionSampleRate = 0.0;
+      options.experimental.replay.onErrorSampleRate = 1.0;
+      options.attachScreenshot = true;
     },
-    appRunner: () => runApp(Application()),
+    appRunner: () => runApp(SentryWidget(child: Application())),
   );
+}
+
+
+Future<void> handleMessageTap(RemoteMessage message,
+    {String? fallbackUrl}) async {
+  try {
+    try {
+      configSentryUser();
+    } catch (e) {
+      Logs.error(text: 'Failed to configure sentry user: $e');
+    }
+    final rawNotification = message.notification?.toMap();
+    Logs.info(text: 'Tapped a message! $rawNotification');
+    final notification = await messageToNotification(message);
+    if (notification == null) {
+      
+      if (fallbackUrl != null) {
+        Logs.warning(text: 'No notification available, launching fallback url');
+        await openUrl(fallbackUrl);
+        return;
+      }
+
+      Logs.error(text: 'No notification available to tap!');
+      Sentry.captureMessage(
+          'No notification available to tap! Raw message: $rawNotification, notification: $notification',
+          level: SentryLevel.error);
+      return;
+    }
+    Logs.info(
+        text:
+            'Triggering tap response for notification: $rawNotification, notification: $notification');
+    await notification.tap();
+  } catch (e, stackTrace) {
+    Logs.error(
+        text: 'Error handling tapped message: $e', stacktrace: stackTrace);
+    await Sentry.captureException(
+      'Error handling tapped message: $e',
+      stackTrace: stackTrace,
+    );
+  }
 }
 
 class Application extends StatefulWidget {
@@ -95,53 +179,17 @@ class _Application extends State<Application> with WidgetsBindingObserver {
   Key key = UniqueKey();
   bool closed = false;
 
-  Future<void> setupInteractedMessage() async {
-    RemoteMessage? initialMessage =
-        await FirebaseMessaging.instance.getInitialMessage();
-
-    if (initialMessage != null) {
-      _handleMessage(initialMessage);
-    }
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
-  }
-
-  void _handleMessage(RemoteMessage message) async {
-    try {
-      try {
-        configSentryUser();
-      } catch (e) {
-        Logs.error(text: 'Failed to configure sentry user: $e');
-      }
-      final rawNotification = message.notification?.toMap();
-      Logs.info(text: 'Tapped a message! $rawNotification');
-      final notification = messageToNotification(message);
-      if (notification == null) {
-        Logs.error(text: 'No notification available to tap!');
-        Sentry.captureMessage(
-            'No notification available to tap! Raw message: $rawNotification',
-            level: SentryLevel.error);
-        return;
-      }
-      Logs.info(
-          text: 'Triggering tap response for notification: $rawNotification');
-      await notification.tap();
-    } catch (e, stackTrace) {
-      Logs.error(
-          text: 'Error handling tapped message: $e', stacktrace: stackTrace);
-      await Sentry.captureException(
-        'Error handling tapped message: $e',
-        stackTrace: stackTrace,
-      );
-    }
-  }
 
   @override
   void initState() {
     super.initState();
+    try {
+      configSentryUser();
+    } catch (e) {
+      Logs.error(text: 'Failed to configure sentry user: $e');
+    }
     WidgetsBinding.instance.addObserver(this);
-    // Run code required to handle interacted messages in an async function
-    // as initState() must not be async
-    setupInteractedMessage();
+    FirebaseMessaging.onMessageOpenedApp.listen(handleMessageTap);
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       Logs.info(text: 'Got a message whilst in the foreground!');
       if (message.notification != null) {

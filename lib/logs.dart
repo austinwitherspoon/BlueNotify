@@ -12,32 +12,32 @@ class Logs {
     var file = await FLog.exportLogs();
     var text = await file.readAsString();
 
+    // limit to last 5000 lines
+    var lines = text.split('\n');
+    if (lines.length > 5000) {
+      text = lines.sublist(lines.length - 5000).join('\n');
+    }
+
     var success = false;
 
     try {
-      final attachment = IoSentryAttachment.fromPath(file.path);
       configSentryUser();
       // Send with sentry
-      Sentry.configureScope((scope) {
+      final attachment = SentryAttachment.fromIntList(
+        text.codeUnits,
+        'logs.txt',
+        contentType: 'text/plain',
+      );
+      Sentry.captureMessage('User Sent Logs', withScope: (scope) {
         scope.addAttachment(attachment);
       });
-      Sentry.captureMessage('User Sent Logs');
-      Sentry.configureScope((scope) {
-        scope.clear();
-      });
-      configSentryUser();
       success = true;
     } catch (e) {
+      Sentry.captureException(e);
       FLog.warning(text: 'Error sending logs to sentry: $e');
     }
 
     try {
-      // limit to last 5000 lines
-      var lines = text.split('\n');
-      if (lines.length > 5000) {
-        text = lines.sublist(lines.length - 5000).join('\n');
-      }
-
     // and save to firestore
     var logs = FirebaseFirestore.instance.collection('logs');
     var token = await settings.getToken();
@@ -234,7 +234,7 @@ class Logs {
           message: text,
           category: className,
           level: sentryLevel,
-          timestamp: DateTime.now(),
+          timestamp: DateTime.now().toUtc(),
         ));
       }
     } catch (e) {

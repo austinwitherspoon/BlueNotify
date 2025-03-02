@@ -35,12 +35,13 @@ dependencies:
   shared_preferences: ^2.3.3
   bluesky: ^0.15.8
   flutter_background_service: ^5.0.10
-  firebase_messaging: ^15.1.4
+  firebase_messaging: ^15.2.4
   firebase_core: ^3.7.0
   url_launcher: ^6.3.1
   cloud_firestore: ^5.4.5
-  sentry_flutter: ^8.10.1
+  sentry_flutter: ^8.13.2
   f_logs: ^2.0.1
+  receive_intent: ^0.2.5
 
 dev_dependencies:
   flutter_launcher_icons: "^0.13.1"

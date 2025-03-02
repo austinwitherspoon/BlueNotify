@@ -34,7 +34,7 @@ Future<bool> checkNotificationPermission() async {
 Future<void> catalogNotification(RemoteMessage message) async {
   await settings.reload();
   Logs.info(text: 'Saving notification..');
-  final notification = messageToNotification(message);
+  final notification = await messageToNotification(message);
   if (notification == null) {
     Logs.info(text: 'No notification to save, returning.');
     return;
@@ -43,7 +43,19 @@ Future<void> catalogNotification(RemoteMessage message) async {
   await settings.addNotification(notification);
 }
 
-Notification? messageToNotification(RemoteMessage message) {
+Future<Notification?> messageToNotification(RemoteMessage message) async {
+  // try for up to 3 seconds to read the message if null
+  // workaround for stupid bug in firebase_messaging
+  // https://github.com/firebase/flutterfire/issues/17107
+  var seconds = 3.0;
+  while (message.notification?.title == null && seconds > 0) {
+    Logs.info(text: 'Waiting for notification..');
+    await Future.delayed(const Duration(milliseconds: 500));
+    seconds -= .5;
+  }
+  Logs.info(
+      text:
+          'Done waiting for notification.. Result: ${message.notification?.toMap()}');
   final rawNotification = message.notification;
   if (rawNotification == null) {
     Logs.info(text: 'No notification in message, returning.');
@@ -58,6 +70,22 @@ Notification? messageToNotification(RemoteMessage message) {
   final timestamp = DateTime.now().toIso8601String();
   final notification = Notification(timestamp, title, subtitle, url);
   return notification;
+}
+
+Future<void> openUrl(String url) async {
+  Logs.info(text: 'Opening URL: $url');
+  final Uri uri = Uri.parse(url);
+  if (Platform.isIOS) {
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      Logs.error(text: 'Could not launch $uri');
+      return;
+    }
+  } else {
+    if (!await launchUrl(uri)) {
+      Logs.info(text: 'Could not launch $uri');
+      return;
+    }
+  }
 }
 
 class Notification {
@@ -76,19 +104,7 @@ class Notification {
   Future<void> tap() async {
     Logs.info(text: 'Tapped notification: $this');
     if (url != null) {
-      Logs.info(text: 'Opening URL: $url');
-      final Uri uri = Uri.parse(url!);
-      if (Platform.isIOS) {
-        if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-          Logs.error(text: 'Could not launch $uri');
-          return;
-        }
-      } else {
-        if (!await launchUrl(uri)) {
-          Logs.info(text: 'Could not launch $uri');
-          return;
-        }
-      }
+      await openUrl(url!);
     } else {
       Sentry.captureMessage('No URL to open! Notification: $this',
           level: SentryLevel.error);

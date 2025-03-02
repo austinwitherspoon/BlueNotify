@@ -36,7 +36,7 @@ dependencies:
   bluesky: ^0.15.8
   flutter_background_service: ^5.0.10
   firebase_messaging: ^15.2.4
-  firebase_core: ^3.7.0
+  firebase_core: ^3.12.1
   url_launcher: ^6.3.1
   cloud_firestore: ^5.4.5
   sentry_flutter: ^8.13.2

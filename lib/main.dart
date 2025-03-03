@@ -63,16 +63,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     );
   }
 }
-Future<void> _initReceiveIntent() async {
-  // Platform messages may fail, so we use a try/catch PlatformException.
-  Logs.warning(text: "2");
-  try {
-    final receivedIntent = await ReceiveIntent.getInitialIntent();
-    Logs.info(text: 'Received intent: $receivedIntent');
-  } catch (e) {
-    Logs.error(text: 'Failed to get initial intent: $e');
-  }
-}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -105,15 +95,12 @@ void main() async {
     }
   }
 
-  if (knownTapUrl == null) {
-    // sleep for .5 seconds to give firebase a chance to load the message
-    await Future.delayed(const Duration(milliseconds: 500));
-  }
-
   RemoteMessage? remoteMessage =
       await FirebaseMessaging.instance.getInitialMessage();
   if (remoteMessage != null) {
     await handleMessageTap(remoteMessage, fallbackUrl: knownTapUrl);
+  } else if (knownTapUrl != null) {
+    await openUrl(knownTapUrl);
   }
 
   await SentryFlutter.init(

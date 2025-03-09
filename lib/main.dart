@@ -109,8 +109,11 @@ void main() async {
       options.tracesSampleRate = 0.2;
       options.profilesSampleRate = 0.1;
       options.sampleRate = 1.0;
-      options.experimental.replay.sessionSampleRate = 0.0;
+      options.experimental.replay.sessionSampleRate = 0.05;
       options.experimental.replay.onErrorSampleRate = 1.0;
+      options.experimental.privacy.maskAllImages = false;
+      options.experimental.privacy.maskAllText = false;
+      options.experimental.privacy.maskAssetImages = false;
       options.attachScreenshot = true;
     },
     appRunner: () => runApp(SentryWidget(child: Application())),

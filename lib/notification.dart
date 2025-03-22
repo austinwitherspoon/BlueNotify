@@ -8,7 +8,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
-const serverUrl = 'http://192.168.1.29:8004';
+const serverUrl = 'https://api.bluenotify.app';
 
 final httpClient = getHttpClient();
 

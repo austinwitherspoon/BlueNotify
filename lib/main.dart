@@ -12,7 +12,6 @@ import 'firebase_options.dart';
 import 'dart:io';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:receive_intent/receive_intent.dart';
-import 'overview_page.dart' as overview_page;
 
 const dsn =
     'https://476441eeec8d8ababd12e7e148193d62@sentry.austinwitherspoon.com/2';

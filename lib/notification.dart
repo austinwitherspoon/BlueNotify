@@ -151,9 +151,13 @@ class ServerNotification {
     // Simulate deleting the notification on a server
     var fcmId = await settings.fcmToken();
     var url = '$serverUrl/notifications/$fcmId/$id';
-    await HttpClient()
+    var result = await HttpClient()
         .deleteUrl(Uri.parse(url))
         .then((request) => request.close());
+    if (result.statusCode != 200) {
+      Logs.error(text: 'network error ${result.statusCode}');
+      throw Exception('network error ${result.statusCode}');
+    }
   }
 
   static Future<List<ServerNotification>> getAllNotifications() async {

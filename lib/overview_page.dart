@@ -1,9 +1,14 @@
 import 'package:blue_notify/logs.dart';
 import 'package:blue_notify/notification.dart';
 import 'package:blue_notify/shoutout.dart';
+import 'package:f_logs/f_logs.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'settings.dart';
+
+List<ServerNotification>? notificationCache;
+DateTime? lastNotificationCacheTime;
+const notificationCacheTimeout = Duration(minutes: 1);
 
 class OverviewPage extends StatefulWidget {
   const OverviewPage({super.key});
@@ -19,7 +24,23 @@ class _OverviewPageState extends State<OverviewPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => reloadNotifications());
+    var useCache = DateTime.now().difference(lastNotificationCacheTime ??
+            DateTime.fromMillisecondsSinceEpoch(0)) <
+        notificationCacheTimeout;
+    if (useCache) {
+      notificationHistory = notificationCache!;
+      loading = false;
+    } else {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => reloadNotifications());
+    }
+  }
+
+  @override
+  void setState(fn) {
+    if (mounted) {
+      super.setState(fn);
+    }
   }
 
   void reloadNotifications({bool showLoading = true}) async {
@@ -28,20 +49,66 @@ class _OverviewPageState extends State<OverviewPage> {
         loading = true;
       });
     }
-    var notifications = await ServerNotification.getAllNotifications();
+    List<ServerNotification> notifications;
+    try {
+      notifications = await ServerNotification.getAllNotifications();
+    } catch (e) {
+      Logs.error(text: 'Error loading notifications: $e');
+      if (context.mounted) {
+        // ignore: use_build_context_synchronously
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading notifications: $e')),
+        );
+      }
+      return;
+    }
     setState(() {
       notificationHistory = notifications;
       loading = false;
     });
+    notificationCache = notifications;
+    lastNotificationCacheTime = DateTime.now();
   }
 
   void removeNotification(ServerNotification notification) {
+    var index = notificationHistory.indexOf(notification);
+    Logs.info(text: 'Removing notification at index $index');
     setState(() {
       notificationHistory.remove(notification);
     });
     notification.delete().then((_) {
       reloadNotifications(showLoading: false);
+    }, onError: (error) {
+      Logs.error(text: 'Error deleting notification: $error');
+      setState(() {
+        notificationHistory.insert(index, notification);
+      });
+      if (context.mounted) {
+        // ignore: use_build_context_synchronously
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting notification: $error')),
+        );
+      }
     });
+  }
+
+  Future<void> clearNotifications() async {
+    try {
+      await ServerNotification.clearNotifications();
+    } catch (e) {
+      Logs.error(text: 'Error clearing notifications: $e');
+      if (context.mounted) {
+        // ignore: use_build_context_synchronously
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error clearing notifications: $e')),
+        );
+      }
+      return;
+    }
+    setState(() {
+      notificationHistory.clear();
+    });
+    notificationCache = [];
   }
 
   @override
@@ -54,11 +121,8 @@ class _OverviewPageState extends State<OverviewPage> {
             builder: (context, settings, child) {
               return IconButton(
                 icon: const Icon(Icons.delete),
-                onPressed: () async {
-                  await ServerNotification.clearNotifications();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('All notifications cleared')),
-                  );
+                onPressed: () {
+                  clearNotifications();
                 },
               );
             },
@@ -77,11 +141,6 @@ class _OverviewPageState extends State<OverviewPage> {
                     padding: const EdgeInsets.all(8.0),
                     child: Consumer<Settings>(
                       builder: (context, settings, child) {
-                        if (notificationHistory.isEmpty) {
-                          return const Center(
-                            child: Text("No notifications available."),
-                          );
-                        }
                         return RefreshIndicator(
                             onRefresh: () async {
                               try {
@@ -95,7 +154,14 @@ class _OverviewPageState extends State<OverviewPage> {
                                 );
                               }
                             },
-                            child: ListView.builder(
+                            child: notificationHistory.isEmpty
+                                ? ListView(children: const [
+                                    Center(
+                                      child:
+                                          Text("No notifications available."),
+                                    )
+                                  ])
+                                : ListView.builder(
                               itemCount: notificationHistory.length,
                               itemBuilder: (context, index) {
                                 final notification = notificationHistory[index];

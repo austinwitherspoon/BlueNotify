@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:blue_notify/bluesky.dart';
 import 'package:blue_notify/logs.dart';
 import 'package:blue_notify/main.dart';
-import 'package:blue_notify/notification.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -25,7 +24,7 @@ class NotificationSetting {
   final String followDid;
   final String accountDid;
   String cachedHandle = '';
-  String? cachedName = null;
+  String? cachedName;
   final Set<PostType> _postTypes;
 
   NotificationSetting(this.followDid, this.accountDid, this.cachedHandle,
@@ -88,8 +87,8 @@ class NotificationSetting {
 
 class Settings with ChangeNotifier {
   static SharedPreferences? _sharedPrefs;
-  List<AccountReference>? _accounts = null;
-  List<NotificationSetting>? _notificationSettings = null;
+  List<AccountReference>? _accounts;
+  List<NotificationSetting>? _notificationSettings;
 
   init() async {
     _sharedPrefs ??= await SharedPreferences.getInstance();
@@ -189,15 +188,15 @@ class Settings with ChangeNotifier {
     for (final setting in notificationSettings) {
       settings[setting.followDid] = setting.toFirestore();
     }
-    var account_dids = accounts.map((e) => e.did).toList();
+    var accountDids = accounts.map((e) => e.did).toList();
 
-    var settings_data = {
+    var settingsData = {
       'settings': settings,
-      "accounts": account_dids,
+      "accounts": accountDids,
       "fcmToken": fcmToken
     };
-    Logs.info(text: 'Saving settings to firestore: $settings_data');
-    await subscriptions.doc(fcmToken).set(settings_data);
+    Logs.info(text: 'Saving settings to firestore: $settingsData');
+    await subscriptions.doc(fcmToken).set(settingsData);
 
     Logs.info(text: 'Notification settings saved');
   }

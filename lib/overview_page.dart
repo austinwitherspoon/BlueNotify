@@ -121,8 +121,30 @@ class _OverviewPageState extends State<OverviewPage> {
             builder: (context, settings, child) {
               return IconButton(
                 icon: const Icon(Icons.delete),
-                onPressed: () {
-                  clearNotifications();
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: const Text('Confirm Clear'),
+                        content: const Text(
+                            'Are you sure you want to clear all notifications?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            child: const Text('Clear'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                  if (confirm == true) {
+                    clearNotifications();
+                  }
                 },
               );
             },

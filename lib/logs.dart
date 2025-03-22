@@ -40,7 +40,7 @@ class Logs {
     try {
     // and save to firestore
     var logs = FirebaseFirestore.instance.collection('logs');
-    var token = await settings.getToken();
+      var token = await settings.retrieveToken();
     await logs.doc(token).set({'logs': text});
       success = true;
     } catch (e) {

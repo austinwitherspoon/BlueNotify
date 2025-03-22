@@ -85,6 +85,7 @@ class NotificationSetting {
     await settings.saveNotificationSettings();
   }
 }
+
 class Settings with ChangeNotifier {
   static SharedPreferences? _sharedPrefs;
   List<AccountReference>? _accounts = null;
@@ -128,7 +129,7 @@ class Settings with ChangeNotifier {
     _sharedPrefs!.setString('lastToken', token);
   }
 
-  Future<String> getToken() async {
+  Future<String> retrieveToken() async {
     Logs.info(text: 'Getting FCM token');
     String? token;
     if (kIsWeb) {
@@ -143,6 +144,13 @@ class Settings with ChangeNotifier {
     }
     Logs.info(text: 'FCM token: $token');
     return lastToken!;
+  }
+
+  Future<String> fcmToken() async {
+    if (lastToken != null) {
+      return lastToken!;
+    }
+    return await retrieveToken();
   }
 
   void addAccount(AccountReference account) {
@@ -173,7 +181,7 @@ class Settings with ChangeNotifier {
     _sharedPrefs!.setStringList('notificationSettings',
         notificationSettings.map((e) => jsonEncode(e)).toList());
     notifyListeners();
-    final fcmToken = await getToken();
+    final fcmToken = await retrieveToken();
     configSentryUser();
     CollectionReference subscriptions =
         FirebaseFirestore.instance.collection('subscriptions');
@@ -189,8 +197,7 @@ class Settings with ChangeNotifier {
       "fcmToken": fcmToken
     };
     Logs.info(text: 'Saving settings to firestore: $settings_data');
-    await subscriptions.doc(fcmToken).set(
-        settings_data);
+    await subscriptions.doc(fcmToken).set(settings_data);
 
     Logs.info(text: 'Notification settings saved');
   }
@@ -236,56 +243,14 @@ class Settings with ChangeNotifier {
     _notificationSettings?.clear();
     await _sharedPrefs!.remove('notificationSettings');
     notifyListeners();
-    final fcmToken = await getToken();
+    final fcmToken = await retrieveToken();
     CollectionReference subscriptions =
         FirebaseFirestore.instance.collection('subscriptions');
     await subscriptions.doc(fcmToken).delete();
   }
 
-  List<Notification> get notificationHistory {
-    Logs.info(text: 'Getting notification history');
-    return _sharedPrefs!.getStringList('notificationHistory')?.map((e) {
-          return Notification.fromJson(jsonDecode(e));
-        }).toList() ??
-        [];
-  }
-
   Future<void> reload() async {
     await _sharedPrefs!.reload();
-    notifyListeners();
-  }
-
-  Future<void> addNotification(Notification notification) async {
-    Logs.info(text: 'Adding notification to history: $notification');
-    final history = notificationHistory;
-    history.insert(0, notification);
-    if (history.length > maxNotificationsToKeep) {
-      history.removeRange(maxNotificationsToKeep, history.length);
-    }
-    await _sharedPrefs!.setStringList(
-        'notificationHistory', history.map((e) => jsonEncode(e)).toList());
-    notifyListeners();
-    Logs.info(text: 'Notification added to history: $notification');
-  }
-
-  Future<void> removeNotification(Notification notification) async {
-    Logs.info(text: 'Removing notification from history: $notification');
-    final history = notificationHistory;
-    final matching = history.firstWhere(
-      (element) =>
-          element.timestamp == notification.timestamp &&
-          element.title == notification.title &&
-          element.subtitle == notification.subtitle,
-    );
-    history.remove(matching);
-    await _sharedPrefs!.setStringList(
-        'notificationHistory', history.map((e) => jsonEncode(e)).toList());
-    notifyListeners();
-  }
-
-  Future<void> clearNotificationHistory() async {
-    Logs.info(text: 'Clearing notification history');
-    await _sharedPrefs!.setStringList('notificationHistory', []);
     notifyListeners();
   }
 

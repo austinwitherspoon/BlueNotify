@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:blue_notify/logs.dart';
@@ -7,7 +8,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
-const maxNotificationsToKeep = 100;
+const serverUrl = 'http://192.168.1.29:8004';
 
 Future<bool> checkNotificationPermission() async {
   var permissions = await FirebaseMessaging.instance.requestPermission(
@@ -23,53 +24,12 @@ Future<bool> checkNotificationPermission() async {
     Logs.error(text: 'Notifications not authorized.');
     return false;
   }
-  
-  final token = await settings.getToken();
+
+  final token = await settings.retrieveToken();
 
   Logs.info(text: 'Token: $token');
   Logs.info(text: 'Notifications authorized.');
   return true;
-}
-
-Future<void> catalogNotification(RemoteMessage message) async {
-  await settings.reload();
-  Logs.info(text: 'Saving notification..');
-  final notification = await messageToNotification(message);
-  if (notification == null) {
-    Logs.info(text: 'No notification to save, returning.');
-    return;
-  }
-  Logs.info(text: 'Saved notification: $notification');
-  await settings.addNotification(notification);
-}
-
-Future<Notification?> messageToNotification(RemoteMessage message) async {
-  // try for up to 3 seconds to read the message if null
-  // workaround for stupid bug in firebase_messaging
-  // https://github.com/firebase/flutterfire/issues/17107
-  var seconds = 3.0;
-  while (message.notification?.title == null && seconds > 0) {
-    Logs.info(text: 'Waiting for notification..');
-    await Future.delayed(const Duration(milliseconds: 500));
-    seconds -= .5;
-  }
-  Logs.info(
-      text:
-          'Done waiting for notification.. Result: ${message.notification?.toMap()}');
-  final rawNotification = message.notification;
-  if (rawNotification == null) {
-    Logs.info(text: 'No notification in message, returning.');
-    return null;
-  }
-  final data = message.data;
-
-  final title = rawNotification.title ?? '[No notification title!]';
-  final subtitle =
-      rawNotification.body ?? data["text"] ?? '[No notification body!]';
-  final url = data['url'];
-  final timestamp = DateTime.now().toIso8601String();
-  final notification = Notification(timestamp, title, subtitle, url);
-  return notification;
 }
 
 Future<void> openUrl(String url) async {
@@ -88,17 +48,41 @@ Future<void> openUrl(String url) async {
   }
 }
 
-class Notification {
-  final String timestamp;
-  final String title;
-  final String subtitle;
-  final String? url;
+String? urlFromPushNotification(RemoteMessage message) {
+  Logs.info(
+      text:
+          'Done waiting for notification.. Result: ${message.notification?.toMap()}');
+  final rawNotification = message.notification;
+  if (rawNotification == null) {
+    Logs.info(text: 'No notification in message, returning.');
+    return null;
+  }
+  final data = message.data;
+  Logs.info(text: 'Data in message: $data');
+  if (data.isEmpty) {
+    Logs.info(text: 'No data in message, returning.');
+    return null;
+  }
+  return data['url'];
+}
 
-  Notification(
-    this.timestamp,
+class ServerNotification {
+  final int id;
+  final String createdAt;
+  final bool isRead;
+  final String title;
+  final String body;
+  final String? url;
+  final String? image;
+
+  ServerNotification(
+    this.id,
+    this.createdAt,
+    this.isRead,
     this.title,
-    this.subtitle,
+    this.body,
     this.url,
+    this.image,
   );
 
   Future<void> tap() async {
@@ -115,23 +99,26 @@ class Notification {
   Map<String, dynamic> toJson() {
     return {
       'title': title,
-      'subtitle': subtitle,
+      'body': body,
       'url': url,
-      'timestamp': timestamp,
+      'timestamp': createdAt,
     };
   }
 
-  static Notification fromJson(Map<String, dynamic> json) {
-    return Notification(
-      json['timestamp'],
-      json['title'],
-      json['subtitle'],
+  static ServerNotification fromJson(Map<String, dynamic> json) {
+    return ServerNotification(
+      json['id'] ?? 0,
+      json['created_at'] ?? '',
+      json['is_read'] ?? false,
+      json['title'] ?? '',
+      json['body'] ?? '',
       json['url'],
+      json['image'],
     );
   }
 
   String get friendlyTimestamp {
-    final parsed = DateTime.parse(timestamp);
+    final parsed = DateTime.parse(createdAt);
     final now = DateTime.now();
     final difference = now.difference(parsed);
     if (difference.inDays > 0) {
@@ -148,6 +135,47 @@ class Notification {
 
   @override
   String toString() {
-    return 'Notification{timestamp: $timestamp, title: $title, subtitle: $subtitle, url: $url}';
+    return 'Notification{timestamp: $createdAt, title: $title, body: $body, url: $url}';
+  }
+
+  Future<void> markAsRead() async {
+    // Simulate marking the notification as read on a server
+    var fcmId = await settings.fcmToken();
+    var url = '$serverUrl/notifications/$fcmId/$id/read';
+    await HttpClient()
+        .postUrl(Uri.parse(url))
+        .then((request) => request.close());
+  }
+
+  Future<void> delete() async {
+    // Simulate deleting the notification on a server
+    var fcmId = await settings.fcmToken();
+    var url = '$serverUrl/notifications/$fcmId/$id';
+    await HttpClient()
+        .deleteUrl(Uri.parse(url))
+        .then((request) => request.close());
+  }
+
+  static Future<List<ServerNotification>> getAllNotifications() async {
+    // Simulate fetching notifications from a server
+    var fcmId = await settings.fcmToken();
+    var url = '$serverUrl/notifications/$fcmId';
+    final response = await HttpClient().getUrl(Uri.parse(url));
+    final responseBody = await response
+        .close()
+        .then((res) => res.transform(const Utf8Decoder()).join());
+    final List<dynamic> jsonResponse = jsonDecode(responseBody);
+    return jsonResponse
+        .map((json) => ServerNotification.fromJson(json))
+        .toList();
+  }
+
+  static Future<void> clearNotifications() async {
+    // Simulate clearing notifications on a server
+    var fcmId = await settings.fcmToken();
+    var url = '$serverUrl/notifications/$fcmId/clear';
+    await HttpClient()
+        .getUrl(Uri.parse(url))
+        .then((request) => request.close());
   }
 }

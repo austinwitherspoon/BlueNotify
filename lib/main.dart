@@ -11,7 +11,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'dart:io';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:receive_intent/receive_intent.dart';
 
 const dsn =
@@ -29,41 +28,6 @@ void configSentryUser() {
   });
 }
 
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  try {
-    Logs.info(text: 'Handling a background message');
-    await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform);
-    await SentryFlutter.init(
-      (options) {
-        options.dsn = dsn;
-        options.tracesSampleRate = 0.3;
-        options.profilesSampleRate = 0.1;
-        options.sampleRate = 1.0;
-      },
-    );
-    await settings.init();
-    // sleep 3 seconds to give firebase a chance to load the message
-    await Future.delayed(const Duration(seconds: 3));
-    try {
-    configSentryUser();
-    } catch (e) {
-      Logs.error(text: 'Failed to configure sentry user: $e');
-    }
-    var rawMessage = message.toMap();
-    Logs.info(text: 'About to catalog notification for $rawMessage');
-    await catalogNotification(message);
-  } catch (e, stackTrace) {
-    Logs.error(
-        text: 'Error handling background message: $e', stacktrace: stackTrace);
-    await Sentry.captureException(
-      e,
-      stackTrace: stackTrace,
-    );
-  }
-}
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -71,7 +35,6 @@ void main() async {
   );
   await settings.init();
   await FirebaseMessaging.instance.setAutoInitEnabled(true);
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   // manually extract the url as a backup in case firebase fails to load message
   String? knownTapUrl;
@@ -80,7 +43,9 @@ void main() async {
     if (Platform.isAndroid) {
       isAndroid = true;
     }
-  } catch (e) {}
+  } catch (e) {
+    // ignore the error if we're not running on android
+  }
   if (isAndroid) {
     // Try manually finding url from intent
     try {
@@ -116,10 +81,9 @@ void main() async {
       options.experimental.privacy.maskAssetImages = false;
       options.attachScreenshot = true;
     },
-    appRunner: () => runApp(SentryWidget(child: Application())),
+    appRunner: () => runApp(const SentryWidget(child: Application())),
   );
 }
-
 
 Future<void> handleMessageTap(RemoteMessage message,
     {String? fallbackUrl}) async {
@@ -131,25 +95,21 @@ Future<void> handleMessageTap(RemoteMessage message,
     }
     final rawNotification = message.notification?.toMap();
     Logs.info(text: 'Tapped a message! $rawNotification');
-    final notification = await messageToNotification(message);
-    if (notification == null) {
-      
+    String? url = urlFromPushNotification(message);
+    if (url == null) {
       if (fallbackUrl != null) {
-        Logs.warning(text: 'No notification available, launching fallback url');
-        await openUrl(fallbackUrl);
-        return;
+        Logs.warning(text: 'No notification available, using fallback url');
+        url = fallbackUrl;
       }
-
-      Logs.error(text: 'No notification available to tap!');
-      Sentry.captureMessage(
-          'No notification available to tap! Raw message: $rawNotification, notification: $notification',
-          level: SentryLevel.error);
+    }
+    if (url == null) {
+      Logs.info(text: 'No url found in notification, returning.');
       return;
     }
     Logs.info(
         text:
-            'Triggering tap response for notification: $rawNotification, notification: $notification');
-    await notification.tap();
+            'Triggering tap response for notification: $rawNotification, url: $url');
+    await openUrl(url);
   } catch (e, stackTrace) {
     Logs.error(
         text: 'Error handling tapped message: $e', stacktrace: stackTrace);
@@ -161,6 +121,8 @@ Future<void> handleMessageTap(RemoteMessage message,
 }
 
 class Application extends StatefulWidget {
+  const Application({super.key});
+
   @override
   State<StatefulWidget> createState() => _Application();
 }
@@ -168,7 +130,6 @@ class Application extends StatefulWidget {
 class _Application extends State<Application> with WidgetsBindingObserver {
   Key key = UniqueKey();
   bool closed = false;
-
 
   @override
   void initState() {
@@ -182,9 +143,6 @@ class _Application extends State<Application> with WidgetsBindingObserver {
     FirebaseMessaging.onMessageOpenedApp.listen(handleMessageTap);
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       Logs.info(text: 'Got a message whilst in the foreground!');
-      if (message.notification != null) {
-        catalogNotification(message);
-      }
     });
   }
 
@@ -215,20 +173,20 @@ class _Application extends State<Application> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     const flutterBlue = Color.fromARGB(255, 32, 139, 254);
 
-    final lightModeScheme = ColorScheme.light(
+    const lightModeScheme = ColorScheme.light(
       primary: flutterBlue,
       onPrimary: Colors.white,
       secondary: Color.fromARGB(255, 240, 240, 240),
       onSecondary: Colors.black,
-      surface: const Color.fromARGB(255, 255, 255, 255),
+      surface: Color.fromARGB(255, 255, 255, 255),
     );
 
-    final darkModeScheme = ColorScheme.dark(
+    const darkModeScheme = ColorScheme.dark(
       primary: flutterBlue,
       onPrimary: Colors.white,
       secondary: Color.fromARGB(255, 30, 41, 54),
       onSecondary: Colors.white,
-      surface: const Color.fromARGB(255, 22, 30, 39),
+      surface: Color.fromARGB(255, 22, 30, 39),
       outlineVariant: Color.fromARGB(255, 30, 41, 54),
     );
 
@@ -268,13 +226,6 @@ class _NavigationState extends State<Navigation> {
 
   @override
   Widget build(BuildContext context) {
-    bool isIOS = false;
-    try {
-      if (Platform.isIOS) {
-        isIOS = true;
-      }
-    } catch (e) {}
-
     return Scaffold(
       bottomNavigationBar: NavigationBar(
         onDestinationSelected: (int index) {
@@ -284,26 +235,25 @@ class _NavigationState extends State<Navigation> {
         },
         indicatorColor: Theme.of(context).colorScheme.secondary,
         selectedIndex: currentPageIndex,
-        destinations: <Widget>[
-          if (!isIOS && !kIsWeb)
-            const NavigationDestination(
-              selectedIcon: Icon(Icons.home),
-              icon: Icon(Icons.home),
-              label: 'Overview',
-            ),
-          const NavigationDestination(
+        destinations: const <Widget>[
+          NavigationDestination(
+            selectedIcon: Icon(Icons.home),
+            icon: Icon(Icons.home),
+            label: 'Overview',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.notification_add),
             label: 'Edit Notifications',
           ),
-          const NavigationDestination(
+          NavigationDestination(
             icon: Icon(Icons.settings),
             label: 'Settings',
           ),
         ],
       ),
       body: <Widget>[
-        if (!isIOS && !kIsWeb) OverviewPage(),
-        NotificationPage(),
+        const OverviewPage(),
+        const NotificationPage(),
         SettingsPage(),
       ][currentPageIndex],
     );

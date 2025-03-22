@@ -179,7 +179,7 @@ class ServerNotification {
     var fcmId = await settings.fcmToken();
     var url = '$serverUrl/notifications/$fcmId/clear';
     await HttpClient()
-        .getUrl(Uri.parse(url))
+        .deleteUrl(Uri.parse(url))
         .then((request) => request.close());
   }
 }

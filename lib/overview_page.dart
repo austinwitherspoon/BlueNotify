@@ -28,7 +28,6 @@ class _OverviewPageState extends State<OverviewPage> {
         loading = true;
       });
     }
-    await Future.delayed(const Duration(milliseconds: 1000));
     var notifications = await ServerNotification.getAllNotifications();
     setState(() {
       notificationHistory = notifications;
@@ -73,7 +72,7 @@ class _OverviewPageState extends State<OverviewPage> {
                 ? Container(
                     alignment: Alignment.topCenter,
                     padding: const EdgeInsets.all(16.0),
-                    child: CircularProgressIndicator())
+                    child: const CircularProgressIndicator())
                 : Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Consumer<Settings>(
@@ -101,7 +100,7 @@ class _OverviewPageState extends State<OverviewPage> {
                               itemBuilder: (context, index) {
                                 final notification = notificationHistory[index];
                                 return Dismissible(
-                                  key: Key(notification.createdAt),
+                                  key: Key(notification.id.toString()),
                                   onDismissed: (direction) {
                                     removeNotification(notification);
                                     ScaffoldMessenger.of(context).showSnackBar(
@@ -113,14 +112,26 @@ class _OverviewPageState extends State<OverviewPage> {
                                   background: Container(color: Colors.red),
                                   child: Card(
                                     child: ListTile(
-                                      leading:
-                                          const Icon(Icons.notifications_sharp),
+                                      leading: Container(
+                                          padding:
+                                              const EdgeInsets.only(top: 8.0),
+                                          child: const Icon(
+                                              Icons.notifications_sharp)),
+                                      titleAlignment:
+                                          ListTileTitleAlignment.top,
                                       title: Text(notification.title),
                                       subtitle: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(notification.body),
+                                          if (notification.image != null)
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                  top: 8.0),
+                                              child: Image.network(
+                                                  notification.image!),
+                                            ),
                                           Text(
                                             notification.friendlyTimestamp,
                                             style: TextStyle(
@@ -141,7 +152,7 @@ class _OverviewPageState extends State<OverviewPage> {
                     ),
                   ),
           ),
-          ShoutoutSmall(),
+          const ShoutoutSmall(),
         ],
       ),
     );

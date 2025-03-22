@@ -12,6 +12,7 @@ import 'firebase_options.dart';
 import 'dart:io';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:receive_intent/receive_intent.dart';
+import 'overview_page.dart' as overview_page;
 
 const dsn =
     'https://476441eeec8d8ababd12e7e148193d62@sentry.austinwitherspoon.com/2';
@@ -143,6 +144,7 @@ class _Application extends State<Application> with WidgetsBindingObserver {
     FirebaseMessaging.onMessageOpenedApp.listen(handleMessageTap);
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       Logs.info(text: 'Got a message whilst in the foreground!');
+      callForReload();
     });
   }
 
@@ -162,6 +164,7 @@ class _Application extends State<Application> with WidgetsBindingObserver {
         setState(() {
           key = UniqueKey();
         });
+        callForReload();
       }
     } else if (state == AppLifecycleState.paused) {
       Logs.info(text: 'App paused.');

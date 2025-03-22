@@ -10,15 +10,28 @@ import 'dart:math' as math;
 List<ServerNotification>? notificationCache;
 DateTime? lastNotificationCacheTime;
 const notificationCacheTimeout = Duration(minutes: 1);
+OverviewPageState? overviewPageState;
+
+void callForReload() {
+  lastNotificationCacheTime = null;
+  if (overviewPageState != null) {
+    try {
+      overviewPageState!.reloadNotifications(showLoading: false);
+    } catch (e) {
+      Logs.error(text: 'Error calling for reload: $e');
+    }
+  }
+}
+
 
 class OverviewPage extends StatefulWidget {
   const OverviewPage({super.key});
 
   @override
-  State<OverviewPage> createState() => _OverviewPageState();
+  State<OverviewPage> createState() => OverviewPageState();
 }
 
-class _OverviewPageState extends State<OverviewPage> {
+class OverviewPageState extends State<OverviewPage> {
   List<ServerNotification> notificationHistory = [];
   bool loading = true;
   bool newestFirst = settings.newestFirst;
@@ -36,6 +49,8 @@ class _OverviewPageState extends State<OverviewPage> {
       WidgetsBinding.instance
           .addPostFrameCallback((_) => reloadNotifications());
     }
+
+    overviewPageState = this;
   }
 
   @override

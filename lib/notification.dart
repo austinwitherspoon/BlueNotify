@@ -10,6 +10,14 @@ import 'package:url_launcher/url_launcher.dart';
 
 const serverUrl = 'http://192.168.1.29:8004';
 
+final httpClient = getHttpClient();
+
+HttpClient getHttpClient() {
+  final httpClient = HttpClient();
+  httpClient.connectionTimeout = const Duration(seconds: 15);
+  return httpClient;
+}
+
 Future<bool> checkNotificationPermission() async {
   var permissions = await FirebaseMessaging.instance.requestPermission(
     alert: true,
@@ -132,23 +140,21 @@ class ServerNotification {
 
   @override
   String toString() {
-    return 'Notification{timestamp: $createdAt, title: $title, body: $body, url: $url}';
+    return 'ServerNotification{id: $id, createdAt: $createdAt, title: $title, body: $body, url: $url, image: $image}';
   }
 
   Future<void> markAsRead() async {
     // Simulate marking the notification as read on a server
     var fcmId = await settings.fcmToken();
     var url = '$serverUrl/notifications/$fcmId/$id/read';
-    await HttpClient()
-        .postUrl(Uri.parse(url))
-        .then((request) => request.close());
+    await httpClient.postUrl(Uri.parse(url)).then((request) => request.close());
   }
 
   Future<void> delete() async {
     // Simulate deleting the notification on a server
     var fcmId = await settings.fcmToken();
     var url = '$serverUrl/notifications/$fcmId/$id';
-    var result = await HttpClient()
+    var result = await httpClient
         .deleteUrl(Uri.parse(url))
         .then((request) => request.close());
     if (result.statusCode != 200) {
@@ -161,7 +167,7 @@ class ServerNotification {
     // Simulate fetching notifications from a server
     var fcmId = await settings.fcmToken();
     var url = '$serverUrl/notifications/$fcmId';
-    final response = await HttpClient()
+    final response = await httpClient
         .getUrl(Uri.parse(url))
         .then((request) => request.close());
     if (response.statusCode != 200) {
@@ -179,7 +185,7 @@ class ServerNotification {
     // Simulate clearing notifications on a server
     var fcmId = await settings.fcmToken();
     var url = '$serverUrl/notifications/$fcmId/clear';
-    final response = await HttpClient()
+    final response = await httpClient
         .deleteUrl(Uri.parse(url))
         .then((request) => request.close());
     if (response.statusCode != 200) {

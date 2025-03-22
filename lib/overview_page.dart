@@ -196,7 +196,23 @@ class _OverviewPageState extends State<OverviewPage> {
                                               padding: const EdgeInsets.only(
                                                   top: 8.0),
                                               child: Image.network(
-                                                  notification.image!),
+                                                        notification.image!,
+                                                        errorBuilder:
+                                                            (BuildContext
+                                                                    context,
+                                                                Object
+                                                                    exception,
+                                                                StackTrace?
+                                                                    stackTrace) {
+                                                          return const Text(
+                                                            'Image failed to load, this post may have been deleted.',
+                                                            style: TextStyle(
+                                                              fontSize: 12,
+                                                              color: Colors.red,
+                                                            ),
+                                                          );
+                                                        },
+                                                      )
                                             ),
                                           Text(
                                             notification.friendlyTimestamp,

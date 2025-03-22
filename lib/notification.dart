@@ -69,7 +69,6 @@ String? urlFromPushNotification(RemoteMessage message) {
 class ServerNotification {
   final int id;
   final String createdAt;
-  final bool isRead;
   final String title;
   final String body;
   final String? url;
@@ -78,7 +77,6 @@ class ServerNotification {
   ServerNotification(
     this.id,
     this.createdAt,
-    this.isRead,
     this.title,
     this.body,
     this.url,
@@ -109,7 +107,6 @@ class ServerNotification {
     return ServerNotification(
       json['id'] ?? 0,
       json['created_at'] ?? '',
-      json['is_read'] ?? false,
       json['title'] ?? '',
       json['body'] ?? '',
       json['url'],

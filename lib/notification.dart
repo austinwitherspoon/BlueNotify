@@ -161,10 +161,14 @@ class ServerNotification {
     // Simulate fetching notifications from a server
     var fcmId = await settings.fcmToken();
     var url = '$serverUrl/notifications/$fcmId';
-    final response = await HttpClient().getUrl(Uri.parse(url));
-    final responseBody = await response
-        .close()
-        .then((res) => res.transform(const Utf8Decoder()).join());
+    final response = await HttpClient()
+        .getUrl(Uri.parse(url))
+        .then((request) => request.close());
+    if (response.statusCode != 200) {
+      Logs.error(text: 'network error ${response.statusCode}');
+      throw Exception('network error ${response.statusCode}');
+    }
+    final responseBody = await response.transform(const Utf8Decoder()).join();
     final List<dynamic> jsonResponse = jsonDecode(responseBody);
     return jsonResponse
         .map((json) => ServerNotification.fromJson(json))
@@ -175,8 +179,14 @@ class ServerNotification {
     // Simulate clearing notifications on a server
     var fcmId = await settings.fcmToken();
     var url = '$serverUrl/notifications/$fcmId/clear';
-    await HttpClient()
+    final response = await HttpClient()
         .deleteUrl(Uri.parse(url))
         .then((request) => request.close());
+    if (response.statusCode != 200) {
+      Logs.error(text: 'network error ${response.statusCode}');
+      throw Exception('network error ${response.statusCode}');
+    }
+    Logs.info(text: 'Notifications cleared');
+    return;
   }
 }

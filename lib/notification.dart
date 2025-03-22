@@ -123,7 +123,7 @@ class ServerNotification {
   }
 
   String get friendlyTimestamp {
-    final parsed = DateTime.parse(createdAt);
+    final parsed = DateTime.parse(createdAt + 'Z');
     final now = DateTime.now();
     final difference = now.difference(parsed);
     if (difference.inDays > 0) {

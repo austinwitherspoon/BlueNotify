@@ -116,6 +116,14 @@ class Settings with ChangeNotifier {
     return _accounts!;
   }
 
+  set newestFirst(bool value) {
+    _sharedPrefs!.setBool('newestFirst', value);
+  }
+
+  bool get newestFirst {
+    return _sharedPrefs!.getBool('newestFirst') ?? true;
+  }
+
   String? get lastToken {
     return _sharedPrefs!.getString('lastToken');
   }

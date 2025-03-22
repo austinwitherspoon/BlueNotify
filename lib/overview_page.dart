@@ -5,6 +5,7 @@ import 'package:f_logs/f_logs.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'settings.dart';
+import 'dart:math' as math;
 
 List<ServerNotification>? notificationCache;
 DateTime? lastNotificationCacheTime;
@@ -20,6 +21,7 @@ class OverviewPage extends StatefulWidget {
 class _OverviewPageState extends State<OverviewPage> {
   List<ServerNotification> notificationHistory = [];
   bool loading = true;
+  bool newestFirst = settings.newestFirst;
 
   @override
   void initState() {
@@ -64,6 +66,7 @@ class _OverviewPageState extends State<OverviewPage> {
     }
     setState(() {
       notificationHistory = notifications;
+      sortNotifications();
       loading = false;
     });
     notificationCache = notifications;
@@ -111,12 +114,43 @@ class _OverviewPageState extends State<OverviewPage> {
     notificationCache = [];
   }
 
+  void updateSortMode() {
+    setState(() {
+      newestFirst = !newestFirst;
+      settings.newestFirst = newestFirst;
+    });
+    sortNotifications();
+  }
+
+  void sortNotifications() {
+    setState(() {
+      if (newestFirst) {
+        notificationHistory.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      } else {
+        notificationHistory.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+
+    // flip the icon based on the sort mode
+    var sortIcon = Transform(
+        alignment: Alignment.center,
+        transform:
+            newestFirst ? Matrix4.rotationX(0) : Matrix4.rotationX(math.pi),
+        child: const Icon(Icons.sort));
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Overview"),
         actions: [
+          IconButton(
+            icon: sortIcon,
+            onPressed: updateSortMode,
+            tooltip: newestFirst ? 'Sort Newest First' : 'Sort Oldest First',
+          ),
           Consumer<Settings>(
             builder: (context, settings, child) {
               return IconButton(

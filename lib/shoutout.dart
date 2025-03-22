@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class Shoutout extends StatelessWidget {
-  const Shoutout({Key? key}) : super(key: key);
+class ShoutOut extends StatelessWidget {
+  const ShoutOut({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) => GestureDetector(
@@ -17,15 +17,16 @@ class Shoutout extends StatelessWidget {
             "Support ethical businesses by shopping at good.store for coffee, tea, socks, soap, and more! "
             "All profits go to charity. \n"
             "Tap to check it out!",
-            style: TextStyle(color: Theme.of(context).colorScheme.onSecondary),
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onSecondary, fontSize: 11),
             textAlign: TextAlign.center,
           ),
         ),
       );
 }
 
-class ShoutoutSmall extends StatelessWidget {
-  const ShoutoutSmall({Key? key}) : super(key: key);
+class ShoutOutSmall extends StatelessWidget {
+  const ShoutOutSmall({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) => GestureDetector(
@@ -37,7 +38,8 @@ class ShoutoutSmall extends StatelessWidget {
           padding: const EdgeInsets.all(16.0),
           child: Text(
             "Support ethical businesses by shopping at good.store. All profits go to charity.",
-            style: TextStyle(color: Theme.of(context).colorScheme.onSecondary),
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onSecondary, fontSize: 11),
             textAlign: TextAlign.center,
           ),
         ),

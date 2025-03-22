@@ -164,7 +164,7 @@ class SettingsPage extends StatelessWidget {
               ],
             ),
           ),
-          Shoutout(),
+          ShoutOut(),
         ]);
       }),
     );

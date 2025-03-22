@@ -9,6 +9,11 @@ import 'package:provider/provider.dart';
 class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+
+    var mq = MediaQuery.of(context);
+
+    var showShoutOut = mq.size.height > 650 && mq.textScaler.scale(10) < 20;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Settings"),
@@ -164,6 +169,7 @@ class SettingsPage extends StatelessWidget {
               ],
             ),
           ),
+          if (showShoutOut)
           ShoutOut(),
         ]);
       }),

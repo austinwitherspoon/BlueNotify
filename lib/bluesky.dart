@@ -1,7 +1,7 @@
 import 'package:bluesky/bluesky.dart' as bsky;
 
 const maxPostsToLoad = 200;
-const fetchSize = 50;
+const fetchSize = 100;
 
 class UiException implements Exception {
   final String message;
@@ -13,6 +13,7 @@ class UiException implements Exception {
     return message;
   }
 }
+
 class AccountReference {
   final String login;
   String did;
@@ -28,31 +29,6 @@ class AccountReference {
         'did': did,
       };
 }
-// class LoggedInAccount {
-//   final String login;
-//   final String password;
-//   String did;
-//   final String server;
-//   Map<String, dynamic> session;
-
-//   LoggedInAccount(this.login, this.password, this.did,
-//       {this.server = 'bsky.social', this.session = const {}});
-
-//   LoggedInAccount.fromJson(Map<String, dynamic> json)
-//       : login = json['login'],
-//         password = json['password'],
-//         did = json['did'] ?? '',
-//         server = json['server'] ?? 'bsky.social',
-//         session = json['session'] ?? {};
-
-//   Map<String, dynamic> toJson() => {
-//         'login': login,
-//         'password': password,
-//         'did': did,
-//         'server': server,
-//         'session': session,
-//       };
-// }
 
 class Profile {
   final String did;
@@ -67,7 +43,7 @@ class Profile {
         actorProfile.displayName, actorProfile.avatar);
   }
 
-  static Profile fromActor(bsky.Actor actor) {
+  static Profile fromActor(dynamic actor) {
     var displayName = actor.displayName;
     if (displayName == null || displayName.isEmpty) {
       displayName = null;
@@ -201,52 +177,20 @@ class BlueskyService {
     }
     return following;
   }
+
+  Future<int> getFollowingCountForUser(String name) async {
+    final results = await _bluesky.actor.getProfile(actor: name);
+    return results.data.followsCount;
+  }
+
+  Future<List<Profile>> searchUsers(String query) async {
+    if (query.isEmpty) {
+      return [];
+    }
+    var results =
+        await _bluesky.actor.searchActorsTypeahead(term: query, limit: 10);
+    return results.data.actors
+        .map((actor) => Profile.fromActor(actor))
+        .toList();
+  }
 }
-
-// class LoggedInBlueskyService extends BlueskyService {
-//   final bsky.Session _session;
-
-//   LoggedInBlueskyService(super.bluesky, this._session);
-
-//   static Future<LoggedInBlueskyService> login(Account account) async {
-//     if (account.login.isEmpty || account.password.isEmpty) {
-//       throw Exception("Username and password cannot be empty.");
-//     }
-//     if (!bsky.isValidAppPassword(account.password)) {
-//       throw UiException(
-//           "Please create and use an \"app password\", not your real password!");
-//     }
-//     try {
-//       if (account.session.isEmpty) {
-//         throw Exception("Session empty.");
-//       }
-//       var session = bsky.Session.fromJson(account.session);
-//       final bluesky = bsky.Bluesky.fromSession(session);
-//       account.session = session.toJson();
-//       account.did = session.did;
-//       developer.log("Session found, reusing.", name: "BlueskyService");
-//       return LoggedInBlueskyService(bluesky, session);
-//     } catch (e) {
-//       developer.log("Session not found, logging in.", name: "BlueskyService");
-//       try {
-//         var session = (await bsky.createSession(
-//           identifier: account.login,
-//           password: account.password,
-//         ))
-//             .data;
-
-//         final bluesky = bsky.Bluesky.fromSession(session);
-//         account.session = session.toJson();
-//         account.did = session.did;
-//         return LoggedInBlueskyService(bluesky, session);
-//       } catch (e) {
-//         developer.log("Failed to login: $e", name: "BlueskyService");
-//         throw UiException("Failed to login: $e");
-//       }
-//     }
-//   }
-
-//   Future<List<Profile>> getFollowing() async {
-//     return await getFollowingForUser(_session.did);
-//   }
-// }

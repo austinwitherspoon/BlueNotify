@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 import 'package:blue_notify/bluesky.dart';
 import 'package:blue_notify/logs.dart';
@@ -89,6 +90,7 @@ class Settings with ChangeNotifier {
   static SharedPreferences? _sharedPrefs;
   List<AccountReference>? _accounts;
   List<NotificationSetting>? _notificationSettings;
+  HashMap<(String, String), NotificationSetting>? _notificationSettingsMap;
 
   init() async {
     _sharedPrefs ??= await SharedPreferences.getInstance();
@@ -172,6 +174,14 @@ class Settings with ChangeNotifier {
     saveAccounts();
   }
 
+  void _buildNotificationSettingsMap() {
+    _notificationSettingsMap = HashMap();
+    for (final setting in notificationSettings) {
+      _notificationSettingsMap![(setting.followDid, setting.accountDid)] =
+          setting;
+    }
+  }
+
   void loadNotificationSettings() {
     Logs.info(text: 'Loading notification settings');
     _notificationSettings =
@@ -181,6 +191,7 @@ class Settings with ChangeNotifier {
             [];
     _notificationSettings!.sort((a, b) => (a.cachedName ?? a.cachedHandle)
         .compareTo(b.cachedName ?? b.cachedHandle));
+    _buildNotificationSettingsMap();
   }
 
   Future<void> saveNotificationSettings() async {
@@ -221,6 +232,7 @@ class Settings with ChangeNotifier {
       {bool save = true}) async {
     Logs.info(text: 'Adding notification setting for ${setting.followDid}');
     notificationSettings.add(setting);
+    _buildNotificationSettingsMap();
     if (save) {
       await saveNotificationSettings();
     }
@@ -228,26 +240,25 @@ class Settings with ChangeNotifier {
 
   NotificationSetting? getNotificationSetting(
       String followDid, String accountDid) {
-    Logs.info(text: 'Getting notification setting for $followDid');
     for (final setting in notificationSettings) {
       if (setting.followDid == followDid && setting.accountDid == accountDid) {
-        Logs.info(text: 'Found notification setting for $followDid');
         return setting;
       }
     }
-    Logs.info(text: 'No notification setting found for $followDid');
     return null;
   }
 
   Future<void> removeNotificationSetting(String did) async {
     Logs.info(text: 'Removing notification setting for $did');
     notificationSettings.removeWhere((element) => element.followDid == did);
+    _buildNotificationSettingsMap();
     await saveNotificationSettings();
   }
 
   Future<void> removeAllNotificationSettings() async {
     Logs.info(text: 'Removing all notification settings');
     _notificationSettings?.clear();
+    _notificationSettingsMap?.clear();
     await _sharedPrefs!.remove('notificationSettings');
     notifyListeners();
     final fcmToken = await retrieveToken();

@@ -70,6 +70,7 @@ void main() async {
 
   await SentryFlutter.init(
     (options) {
+      options.debug = false;
       options.dsn = dsn;
       options.tracesSampleRate = 0.2;
       options.profilesSampleRate = 0.1;

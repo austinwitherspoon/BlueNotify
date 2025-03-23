@@ -6,11 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'settings.dart';
 
+late BlueskyService service;
+
+const followCountLimit = 10000;
+
 class UsernameDisplay extends StatelessWidget {
   final String username;
   final String? displayName;
 
-  const UsernameDisplay(this.username, this.displayName);
+  const UsernameDisplay(this.username, this.displayName, {super.key});
 
   static fromProfile(Profile profile) {
     var displayName = profile.displayName;
@@ -53,7 +57,16 @@ class NotificationPage extends StatefulWidget {
 
 class _NotificationPageState extends State<NotificationPage> {
   String searchQuery = '';
+  List<Profile> autoCompleteResults = [];
   HashSet<String> expandedDids = HashSet();
+
+  @override
+  void initState() {
+    super.initState();
+    BlueskyService.getPublicConnection().then((value) {
+      service = value;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -189,7 +202,7 @@ class _NotificationPageState extends State<NotificationPage> {
     if (accounts.length == 1) {
       account = accounts.first;
     } else {
-      var ask_for_account = await showDialog<AccountReference>(
+      var askForAccount = await showDialog<AccountReference>(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
@@ -209,18 +222,89 @@ class _NotificationPageState extends State<NotificationPage> {
           );
         },
       );
-      if (ask_for_account == null) {
+      if (askForAccount == null) {
         return;
       }
-      account = ask_for_account;
+      account = askForAccount;
     }
 
-    showLoadingDialog(context);
-    final service = await BlueskyService.getPublicConnection();
-    final following = await service.getFollowingForUser(account.did);
-    following.sort((a, b) => (a.sortName()).compareTo(b.sortName()));
+    var newExpandedDids = HashSet<String>();
 
-    print(following);
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AddNotificationWidget(
+            user: Profile(account.did, account.login, null, null),
+            onConfirm: (selectedProfiles) {
+              for (var profile in selectedProfiles) {
+                final newSetting = NotificationSetting(
+                    profile.did,
+                    account.did,
+                    profile.handle,
+                    profile.displayName,
+                    {}..addAll(defaultNotificationSettings));
+                settings.addNotificationSetting(newSetting, save: false);
+                newExpandedDids.add(profile.did);
+              }
+              settings.saveNotificationSettings();
+            });
+      },
+    );
+    print("expanded" + newExpandedDids.toString());
+    setState(() {
+      expandedDids.addAll(newExpandedDids);
+    });
+  }
+}
+
+class AddNotificationWidget extends StatefulWidget {
+  final Profile user;
+  final Function(List<Profile>) onConfirm;
+  const AddNotificationWidget(
+      {super.key, required this.user, required this.onConfirm});
+
+  @override
+  State<AddNotificationWidget> createState() =>
+      // ignore: no_logic_in_create_state
+      _AddNotificationWidgetState(user);
+}
+
+class _AddNotificationWidgetState extends State<AddNotificationWidget> {
+  String searchQuery = '';
+  List<Profile> autoCompleteResults = [];
+  List<Profile> selectedProfiles = [];
+  List<Profile> following = [];
+  bool isLoading = false;
+  final Profile account;
+  bool tooManyFollowing = false;
+
+  _AddNotificationWidgetState(this.account);
+
+  @override
+  void initState() {
+    super.initState();
+    loadFollowing();
+  }
+
+  Future<void> loadFollowing() async {
+    setState(() {
+      isLoading = true;
+    });
+    var followingCount = await service.getFollowingCountForUser(account.did);
+    if (followingCount > followCountLimit) {
+      tooManyFollowing = true;
+      setState(() {
+        isLoading = false;
+      });
+      return;
+    }
+    var results = await service.getFollowingForUser(account.did);
+    results.sort((a, b) => (a.sortName()).compareTo(b.sortName()));
+
+    if (!context.mounted) {
+      return;
+    }
+    final settings = Provider.of<Settings>(context, listen: false);
     // while we have the data, update handles and display names for existing profiles
     for (var profile in following) {
       final existingSetting =
@@ -232,125 +316,123 @@ class _NotificationPageState extends State<NotificationPage> {
     }
 
     // remove any following that we already have a notification setting for
-    following.removeWhere((profile) =>
+    results.removeWhere((profile) =>
         settings.getNotificationSetting(profile.did, account.did) != null);
-    Navigator.pop(context);
 
-    if (following.isEmpty) {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text("No users to follow"),
-            content: const Text(
-                "You are already following all users that you can receive notifications for."),
-            actions: <Widget>[
-              TextButton(
-                child: const Text("OK"),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      );
-      return;
+    setState(() {
+      following = results;
+      isLoading = false;
+    });
+  }
+
+  Future<void> loadAutoCompleteResults() async {
+    var results = await service.searchUsers(searchQuery);
+    setState(() {
+      autoCompleteResults = results;
+    });
+  }
+
+  List<Profile> get searchResults {
+    return following
+        .where((profile) =>
+            profile.handle.toLowerCase().contains(searchQuery) ||
+            (profile.displayName?.toLowerCase().contains(searchQuery) ?? false))
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    String? error;
+    MaterialColor? errorColor;
+    if (tooManyFollowing) {
+      error =
+          "You are following too many people to display them all. Searching all of bluesky..";
+      errorColor = Colors.red;
+    } else if (searchResults.isEmpty &&
+        autoCompleteResults.isEmpty &&
+        searchQuery.isNotEmpty) {
+      error = "No users found.";
+    } else if (searchResults.isEmpty && searchQuery.isNotEmpty) {
+      error = "No users found, searching all of bluesky.";
     }
 
-    var selectedProfiles = <Profile>[];
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text("Choose users to receive notifications for:"),
-              content: Column(
-                children: [
-                  TextField(
-                    decoration: const InputDecoration(
-                      labelText: 'Search',
-                      hintText: 'Search for users',
-                    ),
-                    onChanged: (value) {
-                      setState(() {
-                        searchQuery = value.toLowerCase();
-                      });
-                    },
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: ListBody(
-                        children: following
-                            .where((profile) =>
-                                profile.handle
-                                    .toLowerCase()
-                                    .contains(searchQuery) ||
-                                (profile.displayName
-                                        ?.toLowerCase()
-                                        .contains(searchQuery) ??
-                                    false))
-                            .map((profile) {
-                          return CheckboxListTile(
-                            title: UsernameDisplay.fromProfile(profile),
-                            value: selectedProfiles.contains(profile),
-                            onChanged: (bool? value) {
-                              setState(() {
-                                if (value == true) {
-                                  selectedProfiles.add(profile);
-                                } else {
-                                  selectedProfiles.remove(profile);
-                                }
-                              });
-                            },
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text("Cancel"),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-                TextButton(
-                  child: const Text("Add"),
-                  onPressed: () async {
-                    Navigator.of(context).pop();
-                    for (var profile in selectedProfiles) {
-                      final newSetting = NotificationSetting(
-                          profile.did,
-                          account.did,
-                          profile.handle,
-                          profile.displayName,
-                          {}..addAll(defaultNotificationSettings));
-                      await settings.addNotificationSetting(newSetting,
-                          save: false);
-                      expandedDids.add(newSetting.followDid);
-                    }
-                    await settings.saveNotificationSettings();
-                  },
-                ),
-              ],
-            );
+    return AlertDialog(
+      title: const Text("Choose users to receive notifications for:"),
+      content: Column(
+        children: [
+          TextField(
+            decoration: const InputDecoration(
+              labelText: 'Search',
+              hintText: 'Search for users',
+            ),
+            onChanged: (value) {
+              setState(() {
+                searchQuery = value.toLowerCase();
+              });
+              loadAutoCompleteResults();
+            },
+          ),
+          Expanded(
+              child: isLoading
+                  ? Container(
+                      alignment: Alignment.topCenter,
+                      padding: const EdgeInsets.all(16.0),
+                      child: const CircularProgressIndicator())
+                  : SingleChildScrollView(
+                      child: Column(children: [
+                        if (error != null)
+                          Text(error, style: TextStyle(color: errorColor)),
+                        ListBody(
+                          children: (searchResults.isEmpty
+                                  ? autoCompleteResults
+                                  : searchResults)
+                              .map((profile) {
+                            return CheckboxListTile(
+                              title: UsernameDisplay.fromProfile(profile),
+                              value: selectedProfiles.contains(profile),
+                              onChanged: (bool? value) {
+                                setState(() {
+                                  if (value == true) {
+                                    selectedProfiles.add(profile);
+                                  } else {
+                                    selectedProfiles.remove(profile);
+                                  }
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
+                      ]),
+                    )),
+        ],
+      ),
+      actions: <Widget>[
+        TextButton(
+          child: const Text("Cancel"),
+          onPressed: () {
+            Navigator.of(context).pop();
           },
-        );
-      },
+        ),
+        TextButton(
+          child: const Text("Add"),
+          onPressed: () async {
+            widget.onConfirm(selectedProfiles);
+            Navigator.of(context).pop();
+          },
+        ),
+      ],
     );
   }
 }
 
 showLoadingDialog(BuildContext context) {
   AlertDialog alert = AlertDialog(
-    content: new Row(
+    content: Row(
       children: [
-        CircularProgressIndicator(),
-        Container(margin: EdgeInsets.only(left: 5), child: Text("Loading")),
+        const CircularProgressIndicator(),
+        Container(
+            margin: const EdgeInsets.only(left: 5),
+            child: const Text("Loading")),
       ],
     ),
   );

@@ -50,17 +50,48 @@ class SettingsPage extends StatelessWidget {
                           Theme.of(context).colorScheme.onSecondary,
                     ),
                     onPressed: () async {
-                      var success = await Logs.sendLogs();
-                      var text = success
-                          ? 'Logs sent to developer! Thank you!'
-                          : 'Failed to send logs. :(';
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content:
-                                Text(text)),
+                      String? reason = await showDialog<String>(
+                        context: context,
+                        builder: (BuildContext context) {
+                          var currentInput = '';
+                          return AlertDialog(
+                            title: const Text("Send Error Report to Developer"),
+                            content: TextField(
+                              onChanged: (value) {
+                                currentInput = value;
+                              },
+                              decoration: const InputDecoration(
+                                  hintText: "What went wrong in the app?"),
+                            ),
+                            actions: <Widget>[
+                              TextButton(
+                                child: const Text("Cancel"),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                              ),
+                              TextButton(
+                                child: const Text("Send"),
+                                onPressed: () {
+                                  Navigator.of(context).pop(currentInput);
+                                },
+                              ),
+                            ],
+                          );
+                        },
                       );
+                      if (reason != null && reason.isNotEmpty) {
+                        Logs.info(text: 'User feedback: $reason');
+                        var success = await Logs.sendLogs();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content: Text(success
+                                  ? 'Error report sent successfully.'
+                                  : 'Failed to send error report! Please try again later.')),
+                        );
+                      }
                     },
-                    child: const Text("Send Logs to Developer"),
+                    child: const Text("Send Error Report to Developer"),
                   ),
                 ),
                 ListTile(

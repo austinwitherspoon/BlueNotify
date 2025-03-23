@@ -3,6 +3,7 @@ import 'package:blue_notify/notification.dart';
 import 'package:blue_notify/notification_page.dart';
 import 'package:blue_notify/settings.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'overview_page.dart';
 import 'settings_page.dart';

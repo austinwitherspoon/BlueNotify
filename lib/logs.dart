@@ -2,15 +2,30 @@ import 'package:blue_notify/main.dart';
 import 'package:blue_notify/settings.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:f_logs/f_logs.dart';
+import 'package:flutter/foundation.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:sentry/sentry_io.dart';
 import 'package:stack_trace/stack_trace.dart';
+import 'dart:developer' as developer;
+
+String webLogs = "";
+
+void webLog(String message) {
+  print(message);
+  webLogs += "$message\n";
+}
 
 class Logs {
   static Future<bool> sendLogs() async {
-    FLog.warning(text: 'Exporting logs');
-    var file = await FLog.exportLogs();
-    var text = await file.readAsString();
+    String text;
+    if (!kIsWeb) {
+      FLog.warning(text: 'Exporting logs');
+      var file = await FLog.exportLogs();
+      text = await file.readAsString();
+    } else {
+      webLog('Exporting logs');
+      text = webLogs;
+    }
 
     // limit to last 5000 lines
     var lines = text.split('\n');
@@ -34,7 +49,11 @@ class Logs {
       success = true;
     } catch (e) {
       Sentry.captureException(e);
-      FLog.warning(text: 'Error sending logs to sentry: $e');
+      if (!kIsWeb) {
+        FLog.warning(text: 'Error sending logs to sentry: $e');
+      } else {
+        webLog('Error sending logs to sentry: $e');
+      }
     }
 
     try {
@@ -44,13 +63,25 @@ class Logs {
     await logs.doc(token).set({'logs': text});
       success = true;
     } catch (e) {
-      FLog.warning(text: 'Error sending logs to firestore: $e');
+      if (!kIsWeb) {
+        FLog.warning(text: 'Error sending logs to firestore: $e');
+      } else {
+        webLog('Error sending logs to firestore: $e');
+      }
     }
     if (success) {
-      FLog.warning(text: 'Logs sent');
+      if (!kIsWeb) {
+        FLog.warning(text: 'Logs sent');
+      } else {
+        webLog('Logs sent');
+      }
       return true;
     } else {
-      FLog.warning(text: 'Failed to send logs');
+      if (!kIsWeb) {
+        FLog.warning(text: 'Failed to send logs');
+      } else {
+        webLog('Failed to send logs');
+      }
       return false;
     }
   }
@@ -238,7 +269,11 @@ class Logs {
         ));
       }
     } catch (e) {
-      FLog.warning(text: 'Error adding breadcrumb: $e');
+      if (!kIsWeb) {
+        FLog.warning(text: 'Error adding breadcrumb: $e');
+      } else {
+        webLog('Error adding breadcrumb: $e');
+      }
     }
 
     if (stacktrace == null) {
@@ -249,15 +284,21 @@ class Logs {
       }
     }
 
-    //creating log object
-    FLog.logThis(
-      className: className,
-      methodName: methodName,
-      text: text,
-      type: type,
-      exception: exception,
-      dataLogType: dataLogType,
-      stacktrace: stacktrace,
-    );
+    if (!kIsWeb) {
+      FLog.logThis(
+        className: className,
+        methodName: methodName,
+        text: text,
+        type: type,
+        exception: exception,
+        dataLogType: dataLogType,
+        stacktrace: stacktrace,
+      );
+    } else {
+      webLog('$type: $className.$methodName: $text');
+      if (stacktrace != null) {
+        webLog('Stacktrace: $stacktrace');
+      }
+    }
   }
 }

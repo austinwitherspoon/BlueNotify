@@ -4,6 +4,7 @@ import 'package:blue_notify/bluesky.dart';
 import 'package:blue_notify/notification.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'account_page.dart';
 import 'settings.dart';
 
 late BlueskyService service;
@@ -183,10 +184,25 @@ class _NotificationPageState extends State<NotificationPage> {
         builder: (BuildContext context) {
           return AlertDialog(
             title: const Text("No Accounts"),
-            content: const Text("Please login to your account first."),
+            content: const Text(
+                "You aren't connected to a bluesky account yet, would you like to do that now?"),
             actions: <Widget>[
               TextButton(
-                child: const Text("OK"),
+                child: const Text("Add Account"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AccountPage()),
+                  );
+                },
+              ),
+              TextButton(
+                child: const Text("Cancel"),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },

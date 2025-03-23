@@ -5,18 +5,10 @@ import 'package:blue_notify/logs.dart';
 import 'package:blue_notify/settings.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-
+import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
 const serverUrl = 'https://api.bluenotify.app';
-
-final httpClient = getHttpClient();
-
-HttpClient getHttpClient() {
-  final httpClient = HttpClient();
-  httpClient.connectionTimeout = const Duration(seconds: 15);
-  return httpClient;
-}
 
 Future<bool> checkNotificationPermission() async {
   var permissions = await FirebaseMessaging.instance.requestPermission(
@@ -123,7 +115,7 @@ class ServerNotification {
   }
 
   String get friendlyTimestamp {
-    final parsed = DateTime.parse(createdAt + 'Z');
+    final parsed = DateTime.parse('${createdAt}Z');
     final now = DateTime.now();
     final difference = now.difference(parsed);
     if (difference.inDays > 0) {
@@ -142,21 +134,11 @@ class ServerNotification {
   String toString() {
     return 'ServerNotification{id: $id, createdAt: $createdAt, title: $title, body: $body, url: $url, image: $image}';
   }
-
-  Future<void> markAsRead() async {
-    // Simulate marking the notification as read on a server
-    var fcmId = await settings.fcmToken();
-    var url = '$serverUrl/notifications/$fcmId/$id/read';
-    await httpClient.postUrl(Uri.parse(url)).then((request) => request.close());
-  }
-
+  
   Future<void> delete() async {
-    // Simulate deleting the notification on a server
     var fcmId = await settings.fcmToken();
     var url = '$serverUrl/notifications/$fcmId/$id';
-    var result = await httpClient
-        .deleteUrl(Uri.parse(url))
-        .then((request) => request.close());
+    var result = await http.delete(Uri.parse(url));
     if (result.statusCode != 200) {
       Logs.error(text: 'network error ${result.statusCode}');
       throw Exception('network error ${result.statusCode}');
@@ -164,30 +146,23 @@ class ServerNotification {
   }
 
   static Future<List<ServerNotification>> getAllNotifications() async {
-    // Simulate fetching notifications from a server
     var fcmId = await settings.fcmToken();
     var url = '$serverUrl/notifications/$fcmId';
-    final response = await httpClient
-        .getUrl(Uri.parse(url))
-        .then((request) => request.close());
+    final response = await http.get(Uri.parse(url));
     if (response.statusCode != 200) {
       Logs.error(text: 'network error ${response.statusCode}');
       throw Exception('network error ${response.statusCode}');
     }
-    final responseBody = await response.transform(const Utf8Decoder()).join();
-    final List<dynamic> jsonResponse = jsonDecode(responseBody);
+    List<dynamic> jsonResponse = json.decode(response.body);
     return jsonResponse
         .map((json) => ServerNotification.fromJson(json))
         .toList();
   }
 
   static Future<void> clearNotifications() async {
-    // Simulate clearing notifications on a server
     var fcmId = await settings.fcmToken();
     var url = '$serverUrl/notifications/$fcmId/clear';
-    final response = await httpClient
-        .deleteUrl(Uri.parse(url))
-        .then((request) => request.close());
+    final response = await http.delete(Uri.parse(url));
     if (response.statusCode != 200) {
       Logs.error(text: 'network error ${response.statusCode}');
       throw Exception('network error ${response.statusCode}');

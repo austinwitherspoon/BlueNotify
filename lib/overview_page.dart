@@ -23,7 +23,6 @@ void callForReload() {
   }
 }
 
-
 class OverviewPage extends StatefulWidget {
   const OverviewPage({super.key});
 
@@ -149,7 +148,6 @@ class OverviewPageState extends State<OverviewPage> {
 
   @override
   Widget build(BuildContext context) {
-
     // flip the icon based on the sort mode
     var sortIcon = Transform(
         alignment: Alignment.center,
@@ -233,40 +231,44 @@ class OverviewPageState extends State<OverviewPage> {
                                     )
                                   ])
                                 : ListView.builder(
-                              itemCount: notificationHistory.length,
-                              itemBuilder: (context, index) {
-                                final notification = notificationHistory[index];
-                                return Dismissible(
-                                  key: Key(notification.id.toString()),
-                                  onDismissed: (direction) {
-                                    removeNotification(notification);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content:
-                                              Text('Notification dismissed')),
-                                    );
-                                  },
-                                  background: Container(color: Colors.red),
-                                  child: Card(
-                                    child: ListTile(
-                                      leading: Container(
-                                          padding:
-                                              const EdgeInsets.only(top: 8.0),
-                                          child: const Icon(
-                                              Icons.notifications_sharp)),
-                                      titleAlignment:
-                                          ListTileTitleAlignment.top,
-                                      title: Text(notification.title),
-                                      subtitle: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(notification.body),
-                                          if (notification.image != null)
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                  top: 8.0),
-                                              child: Image.network(
+                                    itemCount: notificationHistory.length,
+                                    itemBuilder: (context, index) {
+                                      final notification =
+                                          notificationHistory[index];
+                                      return Dismissible(
+                                        key: Key(notification.id.toString()),
+                                        onDismissed: (direction) {
+                                          removeNotification(notification);
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                                content: Text(
+                                                    'Notification dismissed')),
+                                          );
+                                        },
+                                        background:
+                                            Container(color: Colors.red),
+                                        child: Card(
+                                          child: ListTile(
+                                            leading: Container(
+                                                padding: const EdgeInsets.only(
+                                                    top: 8.0),
+                                                child: const Icon(
+                                                    Icons.notifications_sharp)),
+                                            titleAlignment:
+                                                ListTileTitleAlignment.top,
+                                            title: Text(notification.title),
+                                            subtitle: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(notification.body),
+                                                if (notification.image != null)
+                                                  Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                              top: 8.0),
+                                                      child: Image.network(
                                                         notification.image!,
                                                         errorBuilder:
                                                             (BuildContext
@@ -283,24 +285,24 @@ class OverviewPageState extends State<OverviewPage> {
                                                             ),
                                                           );
                                                         },
-                                                      )
+                                                      )),
+                                                Text(
+                                                  notification
+                                                      .friendlyTimestamp,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey
+                                                        .withOpacity(0.6),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          Text(
-                                            notification.friendlyTimestamp,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color:
-                                                  Colors.grey.withOpacity(0.6),
-                                            ),
+                                            onTap: () => notification.tap(),
                                           ),
-                                        ],
-                                      ),
-                                      onTap: () => notification.tap(),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ));
+                                        ),
+                                      );
+                                    },
+                                  ));
                       },
                     ),
                   ),

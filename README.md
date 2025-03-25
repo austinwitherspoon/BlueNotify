@@ -1,16 +1,16 @@
-# blue_notify
+# BlueNotify - Post Notifications for Bluesky
 
-A new Flutter project.
+This is the main Flutter app for BlueNotify. Backend services can be found at https://github.com/austinwitherspoon/bluenotify-backend.
 
-## Getting Started
+Currently in-use by over 5000 users!
 
-This project is a starting point for a Flutter application.
+<img src="https://github.com/user-attachments/assets/2113a773-6165-4f46-a07d-a7eff5ab037c" width="300">
+<img src="https://github.com/user-attachments/assets/496dd215-f8ea-4036-a80a-c281301770e4" width="300">
 
-A few resources to get you started if this is your first Flutter project:
+The app uses Firebase Cloud Notifications to receive push notifications. Notification settings are currently stored in Firestore using the user's FCM token. We use that token as each user's unique ID associated with their notification settings in the backend. No login to bluesky is required (although the app does prompt you to enter your bluesky handle in order for certain features to work!)
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+This app is only tested with IOS, Android, and Web.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+This is a personal project that I run for free, and for _the most part_ I want to work on this alone, if you're very eager to add in a feature and help out, feel free to reach out or open an issue!
+
+You can find me on Bluesky at either [@austinwitherspoon.com](https://bsky.app/profile/austinwitherspoon.com) or [@bluenotify.app](https://bsky.app/profile/bluenotify.app)

@@ -1,5 +1,9 @@
 # BlueNotify - Post Notifications for Bluesky
 
+BlueNotify is a post notification app for bluesky, filling a current feature gap that Twitter has but Bluesky has not yet added. Users can connect to their bluesky account and subscribe to push notifications when user's they follow post.
+
+The app can be downloaded on [Google Play](https://play.google.com/store/apps/details?id=com.austinwitherspoon.bluenotify&hl=en_US) and the [Apple App Store](https://apps.apple.com/us/app/bluenotify/id6738239349).
+
 This is the main Flutter app for BlueNotify. Backend services can be found at https://github.com/austinwitherspoon/bluenotify-backend.
 
 Currently in-use by over 5000 users!

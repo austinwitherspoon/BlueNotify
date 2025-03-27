@@ -317,7 +317,7 @@ class _AddNotificationWidgetState extends State<AddNotificationWidget> {
     var results = await service.getFollowingForUser(account.did);
     results.sort((a, b) => (a.sortName()).compareTo(b.sortName()));
 
-    if (!context.mounted) {
+    if (!mounted) {
       return;
     }
     final settings = Provider.of<Settings>(context, listen: false);

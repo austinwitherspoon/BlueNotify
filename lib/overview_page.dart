@@ -1,11 +1,10 @@
 import 'package:blue_notify/logs.dart';
 import 'package:blue_notify/notification.dart';
 import 'package:blue_notify/shoutout.dart';
-import 'package:f_logs/f_logs.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'settings.dart';
 import 'dart:math' as math;
+import 'settings.dart';
 
 List<ServerNotification>? notificationCache;
 DateTime? lastNotificationCacheTime;
@@ -70,8 +69,7 @@ class OverviewPageState extends State<OverviewPage> {
       notifications = await ServerNotification.getAllNotifications();
     } catch (e) {
       Logs.error(text: 'Error loading notifications: $e');
-      if (context.mounted) {
-        // ignore: use_build_context_synchronously
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading notifications: $e')),
         );
@@ -100,8 +98,7 @@ class OverviewPageState extends State<OverviewPage> {
       setState(() {
         notificationHistory.insert(index, notification);
       });
-      if (context.mounted) {
-        // ignore: use_build_context_synchronously
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error deleting notification: $error')),
         );
@@ -114,8 +111,7 @@ class OverviewPageState extends State<OverviewPage> {
       await ServerNotification.clearNotifications();
     } catch (e) {
       Logs.error(text: 'Error clearing notifications: $e');
-      if (context.mounted) {
-        // ignore: use_build_context_synchronously
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error clearing notifications: $e')),
         );

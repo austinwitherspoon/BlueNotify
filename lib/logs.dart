@@ -1,6 +1,5 @@
 import 'package:blue_notify/main.dart';
 import 'package:blue_notify/settings.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:f_logs/f_logs.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -53,20 +52,6 @@ class Logs {
         FLog.warning(text: 'Error sending logs to sentry: $e');
       } else {
         webLog('Error sending logs to sentry: $e');
-      }
-    }
-
-    try {
-    // and save to firestore
-    var logs = FirebaseFirestore.instance.collection('logs');
-      var token = await settings.retrieveToken();
-    await logs.doc(token).set({'logs': text});
-      success = true;
-    } catch (e) {
-      if (!kIsWeb) {
-        FLog.warning(text: 'Error sending logs to firestore: $e');
-      } else {
-        webLog('Error sending logs to firestore: $e');
       }
     }
     if (success) {

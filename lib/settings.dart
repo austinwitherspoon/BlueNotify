@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:blue_notify/bluesky.dart';
 import 'package:blue_notify/logs.dart';
 import 'package:blue_notify/main.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,11 +14,11 @@ const defaultNotificationSettings = {
   PostType.post,
 };
 
-const postTypeToFirebaseNames = {
-  PostType.post: 'post',
-  PostType.repost: 'repost',
-  PostType.reply: 'reply',
-  PostType.replyToFriend: 'replyToFriend',
+const postTypeToApiNames = {
+  PostType.post: 'Post',
+  PostType.repost: 'Repost',
+  PostType.reply: 'Reply',
+  PostType.replyToFriend: 'ReplyToFriend',
 };
 
 class NotificationSetting {
@@ -27,9 +27,12 @@ class NotificationSetting {
   String cachedHandle = '';
   String? cachedName;
   final Set<PostType> _postTypes;
+  List<String>? wordBlockList;
+  List<String>? wordAllowList;
 
   NotificationSetting(this.followDid, this.accountDid, this.cachedHandle,
-      this.cachedName, this._postTypes);
+      this.cachedName, this._postTypes,
+      {this.wordBlockList, this.wordAllowList});
 
   static NotificationSetting fromJson(Map<String, dynamic> json) {
     final postTypes = json['postTypes'];
@@ -52,6 +55,12 @@ class NotificationSetting {
       json['cachedHandle'] ?? '',
       json['cachedName'],
       postTypeSet,
+      wordBlockList: (json['wordBlockList'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      wordAllowList: (json['wordAllowList'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
     );
   }
 
@@ -61,15 +70,20 @@ class NotificationSetting {
         'cachedHandle': cachedHandle,
         'cachedName': cachedName,
         'postTypes': _postTypes.map((e) => e.name).toList(),
+        'wordBlockList': wordBlockList,
+        'wordAllowList': wordAllowList,
       };
 
   Set<PostType> get postTypes => _postTypes;
 
-  Map<String, dynamic> toFirestore() {
-    var postTypes = _postTypes.map((e) => postTypeToFirebaseNames[e]).toList();
+  Map<String, dynamic> toApiJson() {
+    var postTypes = _postTypes.map((e) => postTypeToApiNames[e]).toList();
     return {
-      'did': followDid,
-      'postTypes': postTypes,
+      'user_account_did': accountDid,
+      'following_did': followDid,
+      'post_type': postTypes,
+      'word_block_list': wordBlockList,
+      'word_allow_list': wordAllowList,
     };
   }
 
@@ -199,23 +213,39 @@ class Settings with ChangeNotifier {
     _sharedPrefs!.setStringList('notificationSettings',
         notificationSettings.map((e) => jsonEncode(e)).toList());
     notifyListeners();
+
     final fcmToken = await retrieveToken();
     configSentryUser();
-    CollectionReference subscriptions =
-        FirebaseFirestore.instance.collection('subscriptions');
-    var settings = {};
+
+    var settings = [];
     for (final setting in notificationSettings) {
-      settings[setting.followDid] = setting.toFirestore();
+      settings.add(setting.toApiJson());
     }
-    var accountDids = accounts.map((e) => e.did).toList();
+    var accountJson = accounts
+        .map((e) => {
+              'account_did': e.did,
+            })
+        .toList();
 
     var settingsData = {
-      'settings': settings,
-      "accounts": accountDids,
-      "fcmToken": fcmToken
+      'notification_settings': settings,
+      "accounts": accountJson,
+      "fcm_token": fcmToken
     };
-    Logs.info(text: 'Saving settings to firestore: $settingsData');
-    await subscriptions.doc(fcmToken).set(settingsData);
+
+    Logs.info(text: 'Uploading settings to api: $settingsData');
+    var url = '$apiServer/settings/$fcmToken';
+    var rawJson = jsonEncode(settingsData);
+    Logs.info(text: 'Uploading settings to api: $rawJson');
+    final response = await http.post(Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: rawJson);
+    if (response.statusCode != 200) {
+      Logs.error(text: 'network error ${response}');
+      throw Exception('network error ${response.statusCode}');
+    }
 
     Logs.info(text: 'Notification settings saved');
   }
@@ -262,9 +292,14 @@ class Settings with ChangeNotifier {
     await _sharedPrefs!.remove('notificationSettings');
     notifyListeners();
     final fcmToken = await retrieveToken();
-    CollectionReference subscriptions =
-        FirebaseFirestore.instance.collection('subscriptions');
-    await subscriptions.doc(fcmToken).delete();
+    
+    var url = '$apiServer/settings/$fcmToken';
+    final response = await http.delete(Uri.parse(url));
+    if (response.statusCode != 200) {
+      Logs.error(text: 'network error ${response.statusCode}');
+      throw Exception('network error ${response.statusCode}');
+    }
+    Logs.info(text: 'Notification settings removed');
   }
 
   Future<void> reload() async {

@@ -278,9 +278,11 @@ class Settings with ChangeNotifier {
     return null;
   }
 
-  Future<void> removeNotificationSetting(String did) async {
-    Logs.info(text: 'Removing notification setting for $did');
-    notificationSettings.removeWhere((element) => element.followDid == did);
+  Future<void> removeNotificationSetting(String account, String did) async {
+    Logs.info(
+        text: 'Removing notification setting for $did (account $account)');
+    notificationSettings.removeWhere(
+        (element) => element.followDid == did && element.accountDid == account);
     _buildNotificationSettingsMap();
     await saveNotificationSettings();
   }

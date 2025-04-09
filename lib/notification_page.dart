@@ -14,15 +14,17 @@ const followCountLimit = 10000;
 class UsernameDisplay extends StatelessWidget {
   final String username;
   final String? displayName;
+  final String? owner;
 
-  const UsernameDisplay(this.username, this.displayName, {super.key});
+  const UsernameDisplay(this.username, this.displayName, this.owner,
+      {super.key});
 
   static fromProfile(Profile profile) {
     var displayName = profile.displayName;
     if (displayName == null || displayName.isEmpty) {
       displayName = profile.handle;
     }
-    return UsernameDisplay(profile.handle, displayName);
+    return UsernameDisplay(profile.handle, displayName, null);
   }
 
   static fromNotificationSetting(NotificationSetting setting) {
@@ -30,7 +32,20 @@ class UsernameDisplay extends StatelessWidget {
     if (displayName == null || displayName.isEmpty) {
       displayName = setting.cachedHandle;
     }
-    return UsernameDisplay(setting.cachedHandle, displayName);
+    AccountReference? ownerAccount;
+    String? ownerDisplay;
+
+    if (settings.accounts.length > 1) {
+      try {
+        ownerAccount = settings.accounts
+            .firstWhere((account) => account.did == setting.accountDid);
+      } catch (e) {
+        ownerAccount = null;
+      }
+      ownerDisplay = ownerAccount?.login ?? setting.accountDid;
+    }
+
+    return UsernameDisplay(setting.cachedHandle, displayName, ownerDisplay);
   }
 
   @override
@@ -44,6 +59,14 @@ class UsernameDisplay extends StatelessWidget {
         ),
         Text(username,
             style: const TextStyle(fontSize: 12), textAlign: TextAlign.center),
+        if (owner != null)
+          Text(
+            "Account: $owner",
+            style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.primaryContainer),
+            textAlign: TextAlign.center,
+          ),
       ],
     );
   }
@@ -293,7 +316,7 @@ class NotificationPage extends StatefulWidget {
 class _NotificationPageState extends State<NotificationPage> {
   String searchQuery = '';
   List<Profile> autoCompleteResults = [];
-  HashSet<String> expandedDids = HashSet();
+  HashSet<(String, String)> expandedDids = HashSet();
 
   @override
   void initState() {
@@ -346,7 +369,8 @@ class _NotificationPageState extends State<NotificationPage> {
                     return const SizedBox(height: 80);
                   }
                   final setting = notificationSettings[index];
-                  var expanded = expandedDids.contains(setting.followDid);
+                  var expanded = expandedDids
+                      .contains((setting.accountDid, setting.followDid));
                   return ExpansionTile(
                     title: UsernameDisplay.fromNotificationSetting(setting),
                     shape: RoundedRectangleBorder(
@@ -356,9 +380,11 @@ class _NotificationPageState extends State<NotificationPage> {
                     onExpansionChanged: (expanded) {
                       setState(() {
                         if (expanded) {
-                          expandedDids.add(setting.followDid);
+                          expandedDids
+                              .add((setting.accountDid, setting.followDid));
                         } else {
-                          expandedDids.remove(setting.followDid);
+                          expandedDids
+                              .remove((setting.accountDid, setting.followDid));
                         }
                       });
                     },
@@ -389,6 +415,7 @@ class _NotificationPageState extends State<NotificationPage> {
                                       child: const Text("Delete"),
                                       onPressed: () {
                                         settings.removeNotificationSetting(
+                                            setting.accountDid,
                                             setting.followDid);
                                         Navigator.of(context).pop();
                                       },
@@ -494,7 +521,7 @@ class _NotificationPageState extends State<NotificationPage> {
       account = askForAccount;
     }
 
-    var newExpandedDids = HashSet<String>();
+    var newExpandedDids = HashSet<(String, String)>();
 
     await showDialog(
       context: context,
@@ -510,13 +537,12 @@ class _NotificationPageState extends State<NotificationPage> {
                     profile.displayName,
                     {}..addAll(defaultNotificationSettings));
                 settings.addNotificationSetting(newSetting, save: false);
-                newExpandedDids.add(profile.did);
+                newExpandedDids.add((account.did, profile.did));
               }
               settings.saveNotificationSettings();
             });
       },
     );
-    print("expanded" + newExpandedDids.toString());
     setState(() {
       expandedDids.addAll(newExpandedDids);
     });

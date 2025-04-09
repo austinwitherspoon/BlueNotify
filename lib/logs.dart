@@ -71,6 +71,14 @@ class Logs {
     }
   }
 
+  static void clearLogs() {
+    if (!kIsWeb) {
+      FLog.clearLogs();
+    } else {
+      webLogs = "";
+    }
+  }
+
   static void debug({
     String? className,
     String? methodName,

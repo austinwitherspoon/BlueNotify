@@ -41,6 +41,12 @@ void main() async {
   await settings.init();
   await FirebaseMessaging.instance.setAutoInitEnabled(true);
 
+  try {
+    settings.checkClearLogHistory();
+  } catch (e) {
+    Logs.error(text: 'Failed to clear log history: $e');
+  }
+
   // manually extract the url as a backup in case firebase fails to load message
   String? knownTapUrl;
   bool isAndroid = false;

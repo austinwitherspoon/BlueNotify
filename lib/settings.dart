@@ -110,6 +110,22 @@ class Settings with ChangeNotifier {
     _sharedPrefs ??= await SharedPreferences.getInstance();
   }
 
+  // Clear the history the first time we run each day
+  void checkClearLogHistory() {
+    final lastClear = _sharedPrefs!.getInt('lastClearLogHistory') ?? 0;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final lastClearDate = DateTime.fromMillisecondsSinceEpoch(lastClear);
+    final nowDate = DateTime.fromMillisecondsSinceEpoch(now);
+    if (lastClearDate.year != nowDate.year ||
+        lastClearDate.month != nowDate.month ||
+        lastClearDate.day != nowDate.day) {
+      Logs.info(text: 'Clearing log history');
+      _sharedPrefs!.setInt('lastClearLogHistory', now);
+      Logs.clearLogs();
+      Logs.info(text: 'Log history cleared');
+    }
+  }
+
   void loadAccounts() {
     Logs.info(text: 'Loading accounts');
     _accounts = _sharedPrefs!.getStringList('accounts')?.map((e) {

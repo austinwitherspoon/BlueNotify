@@ -345,6 +345,7 @@ class _NotificationPageState extends State<NotificationPage> {
               onChanged: (value) {
                 setState(() {
                   searchQuery = value.toLowerCase();
+                  expandedDids.clear();
                 });
               },
             ),

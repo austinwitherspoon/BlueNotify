@@ -49,6 +49,240 @@ class UsernameDisplay extends StatelessWidget {
   }
 }
 
+class SingleNotificationSettings extends StatelessWidget {
+  final NotificationSetting setting;
+
+  const SingleNotificationSettings({
+    super.key,
+    required this.setting,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+        color: Theme.of(context).colorScheme.secondaryContainer,
+        child: Column(
+          children: (PostType.values
+                  .map((postType) {
+                    return SwitchListTile(
+                      title: Text(postTypeNames[postType] ?? "Unknown"),
+                      value: setting.postTypes.contains(postType),
+                      onChanged: (value) {
+                        if (value) {
+                          setting.addPostType(postType);
+                        } else {
+                          setting.removePostType(postType);
+                        }
+                      },
+                    );
+                  })
+                  .toList()
+                  .cast<Widget>()) +
+              [
+                const Padding(
+                    padding: EdgeInsets.only(top: 10.0),
+                    child: Text(
+                      "Notification Filters:",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    )),
+                const Padding(
+                    padding: EdgeInsets.only(bottom: 10.0),
+                    child: Text(
+                      "If set, only notifications that match these filters will be shown.",
+                      softWrap: true,
+                    )),
+                GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return RequiredWordsDialog(
+                            requiredWords: setting.wordAllowList ?? [],
+                            description:
+                                "Only posts that contain one of these words will be shown. Leave empty to receive all notifications.",
+                            onConfirm: (words) {
+                              setting.wordAllowList =
+                                  words.isEmpty ? null : words;
+                              Provider.of<Settings>(context, listen: false)
+                                  .saveNotificationSettings();
+                            },
+                          );
+                        },
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                          top: 10.0, left: 20.0, right: 20.0, bottom: 10.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Required words: ",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Expanded(
+                            child: Text(
+                              setting.wordAllowList?.join(', ') ?? "Not Set",
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.left,
+                            ),
+                          ),
+                          const Text("Tap to Edit",
+                              style: TextStyle(color: Colors.blue)),
+                        ],
+                      ),
+                    )),
+                GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return RequiredWordsDialog(
+                            requiredWords: setting.wordBlockList ?? [],
+                            description:
+                                "If a post contains any of these words, you will not receive a notification.",
+                            onConfirm: (words) {
+                              setting.wordBlockList =
+                                  words.isEmpty ? null : words;
+                              Provider.of<Settings>(context, listen: false)
+                                  .saveNotificationSettings();
+                            },
+                          );
+                        },
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                          top: 10.0, left: 20.0, right: 20.0, bottom: 10.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Blocked words: ",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Expanded(
+                            child: Text(
+                              setting.wordBlockList?.join(', ') ?? "Not Set",
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.left,
+                            ),
+                          ),
+                          const Text("Tap to Edit",
+                              style: TextStyle(color: Colors.blue)),
+                        ],
+                      ),
+                    ))
+              ],
+        ));
+  }
+}
+
+class RequiredWordsDialog extends StatefulWidget {
+  final List<String> requiredWords;
+  final String? description;
+  final Function(List<String>) onConfirm;
+
+  const RequiredWordsDialog({
+    super.key,
+    required this.requiredWords,
+    this.description,
+    required this.onConfirm,
+  });
+
+  @override
+  State<RequiredWordsDialog> createState() => _RequiredWordsDialogState();
+}
+
+class _RequiredWordsDialogState extends State<RequiredWordsDialog> {
+  late List<String> words;
+  String? description;
+
+  @override
+  void initState() {
+    super.initState();
+    words = List<String>.from(widget.requiredWords);
+    description = widget.description;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final TextEditingController wordController = TextEditingController();
+
+    return AlertDialog(
+      title: const Text("Edit Required Words"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (description != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10.0),
+              child: Text(
+                description!,
+                softWrap: true,
+              ),
+            ),
+          TextField(
+            controller: wordController,
+            decoration: const InputDecoration(
+              labelText: "Add a word",
+              hintText: "Enter a word",
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (wordController.text.isNotEmpty) {
+                setState(() {
+                  words.add(wordController.text.trim());
+                });
+                wordController.clear();
+              }
+            },
+            child: const Text("Add"),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: Container(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: words.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(words[index]),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () {
+                          setState(() {
+                            words.removeAt(index);
+                          });
+                        },
+                      ),
+                    );
+                  },
+                )),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: const Text("Cancel"),
+        ),
+        TextButton(
+          onPressed: () {
+            widget.onConfirm(words);
+            Navigator.of(context).pop();
+          },
+          child: const Text("Save"),
+        ),
+      ],
+    );
+  }
+}
+
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
 
@@ -94,8 +328,7 @@ class _NotificationPageState extends State<NotificationPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10.0),
               ),
-              key:
-                  GlobalKey(), // This is a workaround to fix the issue of ExpansionTile not expanding when the list is updated
+              key: GlobalKey(),
               onExpansionChanged: (expanded) {
                 setState(() {
                   if (expanded) {
@@ -144,21 +377,11 @@ class _NotificationPageState extends State<NotificationPage> {
                   ),
                 ],
               ),
-              children: PostType.values.map((postType) {
-                return SwitchListTile(
-                  title: Text(postTypeNames[postType] ?? "Unknown"),
-                  value: setting.postTypes.contains(postType),
-                  onChanged: (value) {
-                    setState(() {
-                      if (value) {
-                        setting.addPostType(postType);
-                      } else {
-                        setting.removePostType(postType);
-                      }
-                    });
-                  },
-                );
-              }).toList(),
+              children: [
+                SingleNotificationSettings(
+                  setting: setting,
+                ),
+              ],
             );
           },
         );

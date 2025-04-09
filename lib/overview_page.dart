@@ -69,10 +69,14 @@ class OverviewPageState extends State<OverviewPage> {
       notifications = await ServerNotification.getAllNotifications();
     } catch (e) {
       Logs.error(text: 'Error loading notifications: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading notifications: $e')),
-        );
+      try {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error loading notifications: $e')),
+          );
+        }
+      } catch (e) {
+        Logs.error(text: 'Error showing snackbar: $e');
       }
       return;
     }

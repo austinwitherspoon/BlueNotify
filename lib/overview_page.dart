@@ -92,7 +92,7 @@ class OverviewPageState extends State<OverviewPage> {
       notificationHistory.remove(notification);
     });
     notification.delete().then((_) {
-      reloadNotifications(showLoading: false);
+      Logs.info(text: 'Notification deleted successfully');
     }, onError: (error) {
       Logs.error(text: 'Error deleting notification: $error');
       setState(() {

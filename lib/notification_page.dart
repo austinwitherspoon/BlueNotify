@@ -309,83 +309,110 @@ class _NotificationPageState extends State<NotificationPage> {
       appBar: AppBar(
         title: const Text("Edit Notification Settings"),
       ),
-      body: Consumer<Settings>(builder: (context, settings, child) {
-        final notificationSettings = settings.notificationSettings;
-        notificationSettings.sort((a, b) => (a.cachedName ?? a.cachedHandle)
-            .toLowerCase()
-            .compareTo((b.cachedName ?? b.cachedHandle).toLowerCase()));
-        return ListView.builder(
-          itemCount:
-              notificationSettings.length + 1, // Add one for the blank space
-          itemBuilder: (context, index) {
-            if (index == notificationSettings.length) {
-              return const SizedBox(height: 80); // Blank space at the bottom
-            }
-            final setting = notificationSettings[index];
-            var expanded = expandedDids.contains(setting.followDid);
-            return ExpansionTile(
-              title: UsernameDisplay.fromNotificationSetting(setting),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              decoration: const InputDecoration(
+                labelText: 'Search',
+                hintText: 'Search notification settings',
+                prefixIcon: Icon(Icons.search),
               ),
-              key: GlobalKey(),
-              onExpansionChanged: (expanded) {
+              onChanged: (value) {
                 setState(() {
-                  if (expanded) {
-                    expandedDids.add(setting.followDid);
-                  } else {
-                    expandedDids.remove(setting.followDid);
-                  }
+                  searchQuery = value.toLowerCase();
                 });
               },
-              maintainState: false,
-              initiallyExpanded: expanded,
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.expand_more),
-                  IconButton(
-                    icon: const Icon(Icons.delete),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: const Text("Confirm Deletion"),
-                            content: const Text(
-                                "Are you sure you want to delete this notification setting?"),
-                            actions: <Widget>[
-                              TextButton(
-                                child: const Text("Cancel"),
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                              ),
-                              TextButton(
-                                child: const Text("Delete"),
-                                onPressed: () {
-                                  settings.removeNotificationSetting(
-                                      setting.followDid);
-                                  Navigator.of(context).pop();
-                                },
-                              ),
-                            ],
-                          );
-                        },
-                      );
+            ),
+          ),
+          Expanded(
+            child: Consumer<Settings>(builder: (context, settings, child) {
+              final notificationSettings = settings.notificationSettings
+                  .where((setting) =>
+                      (setting.cachedName ?? setting.cachedHandle)
+                          .toLowerCase()
+                          .contains(searchQuery) ||
+                      setting.cachedHandle.toLowerCase().contains(searchQuery))
+                  .toList();
+              notificationSettings.sort((a, b) => (a.cachedName ??
+                      a.cachedHandle)
+                  .toLowerCase()
+                  .compareTo((b.cachedName ?? b.cachedHandle).toLowerCase()));
+              return ListView.builder(
+                itemCount: notificationSettings.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == notificationSettings.length) {
+                    return const SizedBox(height: 80);
+                  }
+                  final setting = notificationSettings[index];
+                  var expanded = expandedDids.contains(setting.followDid);
+                  return ExpansionTile(
+                    title: UsernameDisplay.fromNotificationSetting(setting),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                    key: GlobalKey(),
+                    onExpansionChanged: (expanded) {
+                      setState(() {
+                        if (expanded) {
+                          expandedDids.add(setting.followDid);
+                        } else {
+                          expandedDids.remove(setting.followDid);
+                        }
+                      });
                     },
-                  ),
-                ],
-              ),
-              children: [
-                SingleNotificationSettings(
-                  setting: setting,
-                ),
-              ],
-            );
-          },
-        );
-      }),
+                    maintainState: false,
+                    initiallyExpanded: expanded,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.expand_more),
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  title: const Text("Confirm Deletion"),
+                                  content: const Text(
+                                      "Are you sure you want to delete this notification setting?"),
+                                  actions: <Widget>[
+                                    TextButton(
+                                      child: const Text("Cancel"),
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                    ),
+                                    TextButton(
+                                      child: const Text("Delete"),
+                                      onPressed: () {
+                                        settings.removeNotificationSetting(
+                                            setting.followDid);
+                                        Navigator.of(context).pop();
+                                      },
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    children: [
+                      SingleNotificationSettings(
+                        setting: setting,
+                      ),
+                    ],
+                  );
+                },
+              );
+            }),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: addNotification,
         tooltip: 'Add Notification',

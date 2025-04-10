@@ -64,7 +64,8 @@ class UsernameDisplay extends StatelessWidget {
             "Account: $owner",
             style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.primaryContainer),
+                color:
+                    const Color.fromARGB(255, 127, 127, 127).withOpacity(0.6)),
             textAlign: TextAlign.center,
           ),
       ],
@@ -102,18 +103,6 @@ class SingleNotificationSettings extends StatelessWidget {
                   .toList()
                   .cast<Widget>()) +
               [
-                const Padding(
-                    padding: EdgeInsets.only(top: 10.0),
-                    child: Text(
-                      "Notification Filters:",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    )),
-                const Padding(
-                    padding: EdgeInsets.only(bottom: 10.0),
-                    child: Text(
-                      "If set, only notifications that match these filters will be shown.",
-                      softWrap: true,
-                    )),
                 GestureDetector(
                     onTap: () {
                       showDialog(
@@ -122,7 +111,7 @@ class SingleNotificationSettings extends StatelessWidget {
                           return RequiredWordsDialog(
                             requiredWords: setting.wordAllowList ?? [],
                             description:
-                                "Only posts that contain one of these words will be shown. Leave empty to receive all notifications.",
+                                "Only posts that contain any of these words will receive a notification. Leave empty to receive all notifications.",
                             onConfirm: (words) {
                               setting.wordAllowList =
                                   words.isEmpty ? null : words;
@@ -135,7 +124,7 @@ class SingleNotificationSettings extends StatelessWidget {
                     },
                     child: Padding(
                       padding: const EdgeInsets.only(
-                          top: 10.0, left: 20.0, right: 20.0, bottom: 10.0),
+                          top: 10.0, left: 15.0, right: 15.0, bottom: 10.0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -176,7 +165,7 @@ class SingleNotificationSettings extends StatelessWidget {
                     },
                     child: Padding(
                       padding: const EdgeInsets.only(
-                          top: 10.0, left: 20.0, right: 20.0, bottom: 10.0),
+                          top: 10.0, left: 15.0, right: 15.0, bottom: 10.0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [

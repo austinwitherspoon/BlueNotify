@@ -57,6 +57,8 @@ class _AccountPageState extends State<AccountPage> {
                 decoration: const InputDecoration(
                   labelText: 'Username',
                 ),
+                autocorrect: false,
+                enableSuggestions: false,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your username';

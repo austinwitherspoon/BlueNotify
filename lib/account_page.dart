@@ -134,9 +134,9 @@ class _AccountPageState extends State<AccountPage> {
         Navigator.pop(context);
         return;
       }
-
-      final settings = Provider.of<Settings>(context, listen: false);
-      settings.addAccount(account);
+      setState(() {
+        settings.addAccount(account);
+      });
       Navigator.pop(context);
       Navigator.pop(context);
     }

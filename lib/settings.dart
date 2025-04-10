@@ -1,5 +1,6 @@
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:io';
 import 'package:blue_notify/bluesky.dart';
 import 'package:blue_notify/logs.dart';
 import 'package:blue_notify/main.dart';
@@ -170,6 +171,23 @@ class Settings with ChangeNotifier {
 
   Future<String> retrieveToken() async {
     Logs.info(text: 'Getting FCM token');
+
+    // On IOS, always load APNS first!
+    bool isIOS = false;
+    try {
+      if (Platform.isIOS) {
+        isIOS = true;
+      }
+    } catch (e) {
+      // ignore the error if we're not running on iOS
+    }
+    if (isIOS) {
+      final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+      if (apnsToken == null) {
+        Logs.error(text: 'No APNS token found');
+        throw Exception('No APNS token found');
+      }
+    }
     String? token;
     if (kIsWeb) {
       token = await FirebaseMessaging.instance.getToken(

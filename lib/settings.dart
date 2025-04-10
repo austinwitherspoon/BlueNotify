@@ -212,6 +212,10 @@ class Settings with ChangeNotifier {
 
   void addAccount(AccountReference account) {
     Logs.info(text: 'Adding account with DID: ${account.did}');
+    if (accounts.any((element) => element.did == account.did)) {
+      Logs.info(text: 'Account already exists, not adding');
+      return;
+    }
     accounts.add(account);
     saveAccounts();
   }

@@ -93,7 +93,7 @@ void main() async {
       options.experimental.privacy.maskAssetImages = false;
       options.attachScreenshot = true;
     },
-    appRunner: () => runApp(const SentryWidget(child: Application())),
+    appRunner: () => runApp(SentryWidget(child: const Application())),
   );
 }
 

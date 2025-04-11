@@ -110,6 +110,7 @@ class SingleNotificationSettings extends StatelessWidget {
                         builder: (BuildContext context) {
                           return RequiredWordsDialog(
                             requiredWords: setting.wordAllowList ?? [],
+                            title: "Edit Required Words",
                             description:
                                 "Only posts that contain any of these words will receive a notification. Leave empty to receive all notifications.",
                             onConfirm: (words) {
@@ -151,6 +152,7 @@ class SingleNotificationSettings extends StatelessWidget {
                         builder: (BuildContext context) {
                           return RequiredWordsDialog(
                             requiredWords: setting.wordBlockList ?? [],
+                            title: "Edit Blocked Words",
                             description:
                                 "If a post contains any of these words, you will not receive a notification.",
                             onConfirm: (words) {
@@ -191,12 +193,14 @@ class SingleNotificationSettings extends StatelessWidget {
 }
 
 class RequiredWordsDialog extends StatefulWidget {
+  final String title;
   final List<String> requiredWords;
   final String? description;
   final Function(List<String>) onConfirm;
 
   const RequiredWordsDialog({
     super.key,
+    required this.title,
     required this.requiredWords,
     this.description,
     required this.onConfirm,
@@ -222,7 +226,7 @@ class _RequiredWordsDialogState extends State<RequiredWordsDialog> {
     final TextEditingController wordController = TextEditingController();
 
     return AlertDialog(
-      title: const Text("Edit Required Words"),
+      title: Text(widget.title),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

@@ -1,14 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:blue_notify/main.dart';
 import 'package:blue_notify/logs.dart';
 import 'package:blue_notify/settings.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
-
-const serverUrl = 'https://api.bluenotify.app';
 
 Future<bool> checkNotificationPermission() async {
   var permissions = await FirebaseMessaging.instance.requestPermission(
@@ -137,7 +136,7 @@ class ServerNotification {
   
   Future<void> delete() async {
     var fcmId = await settings.fcmToken();
-    var url = '$serverUrl/notifications/$fcmId/$id';
+    var url = '$apiServer/notifications/$fcmId/$id';
     var result = await http.delete(Uri.parse(url));
     if (result.statusCode != 200) {
       Logs.error(text: 'network error ${result.statusCode}');
@@ -147,7 +146,7 @@ class ServerNotification {
 
   static Future<List<ServerNotification>> getAllNotifications() async {
     var fcmId = await settings.fcmToken();
-    var url = '$serverUrl/notifications/$fcmId';
+    var url = '$apiServer/notifications/$fcmId';
     final response = await http.get(Uri.parse(url));
     if (response.statusCode != 200) {
       Logs.error(text: 'network error ${response.statusCode}');
@@ -161,7 +160,7 @@ class ServerNotification {
 
   static Future<void> clearNotifications() async {
     var fcmId = await settings.fcmToken();
-    var url = '$serverUrl/notifications/$fcmId/clear';
+    var url = '$apiServer/notifications/$fcmId/clear';
     final response = await http.delete(Uri.parse(url));
     if (response.statusCode != 200) {
       Logs.error(text: 'network error ${response.statusCode}');

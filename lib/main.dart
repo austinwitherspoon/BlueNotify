@@ -14,8 +14,12 @@ import 'dart:io';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:receive_intent/receive_intent.dart';
 
-const dsn =
-    'https://476441eeec8d8ababd12e7e148193d62@sentry.austinwitherspoon.com/2';
+const dsn = kDebugMode
+    ? ''
+    : 'https://476441eeec8d8ababd12e7e148193d62@sentry.austinwitherspoon.com/2';
+
+const apiServer =
+    kDebugMode ? 'http://10.0.2.2:8004' : 'https://api.bluenotify.app';
 
 void configSentryUser() {
   var blueskyDid = settings.accounts.firstOrNull?.did;
@@ -36,6 +40,12 @@ void main() async {
   );
   await settings.init();
   await FirebaseMessaging.instance.setAutoInitEnabled(true);
+
+  try {
+    settings.checkClearLogHistory();
+  } catch (e) {
+    Logs.error(text: 'Failed to clear log history: $e');
+  }
 
   // manually extract the url as a backup in case firebase fails to load message
   String? knownTapUrl;

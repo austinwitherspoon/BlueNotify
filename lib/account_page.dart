@@ -57,6 +57,8 @@ class _AccountPageState extends State<AccountPage> {
                 decoration: const InputDecoration(
                   labelText: 'Username',
                 ),
+                autocorrect: false,
+                enableSuggestions: false,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your username';
@@ -134,9 +136,9 @@ class _AccountPageState extends State<AccountPage> {
         Navigator.pop(context);
         return;
       }
-
-      final settings = Provider.of<Settings>(context, listen: false);
-      settings.addAccount(account);
+      setState(() {
+        settings.addAccount(account);
+      });
       Navigator.pop(context);
       Navigator.pop(context);
     }

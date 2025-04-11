@@ -1,3 +1,4 @@
+import 'package:blue_notify/account_page.dart';
 import 'package:blue_notify/logs.dart';
 import 'package:blue_notify/notification.dart';
 import 'package:blue_notify/shoutout.dart';
@@ -59,6 +60,13 @@ class OverviewPageState extends State<OverviewPage> {
   }
 
   void reloadNotifications({bool showLoading = true}) async {
+    if (settings.lastToken == null) {
+      setState(() {
+        loading = false;
+      });
+      Logs.info(text: 'No token available, cannot reload notifications');
+      return;
+    }
     if (showLoading) {
       setState(() {
         loading = true;
@@ -69,10 +77,14 @@ class OverviewPageState extends State<OverviewPage> {
       notifications = await ServerNotification.getAllNotifications();
     } catch (e) {
       Logs.error(text: 'Error loading notifications: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading notifications: $e')),
-        );
+      try {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error loading notifications: $e')),
+          );
+        }
+      } catch (e) {
+        Logs.error(text: 'Error showing snackbar: $e');
       }
       return;
     }
@@ -92,7 +104,7 @@ class OverviewPageState extends State<OverviewPage> {
       notificationHistory.remove(notification);
     });
     notification.delete().then((_) {
-      reloadNotifications(showLoading: false);
+      Logs.info(text: 'Notification deleted successfully');
     }, onError: (error) {
       Logs.error(text: 'Error deleting notification: $error');
       setState(() {
@@ -144,6 +156,37 @@ class OverviewPageState extends State<OverviewPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Check if accounts are empty
+    if (settings.accounts.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text("Overview"),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                "No accounts set up.",
+                style: TextStyle(fontSize: 18),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const AccountPage()),
+                  ).then((_) => setState(() {}));
+                },
+                child: const Text("Add Account"),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     // flip the icon based on the sort mode
     var sortIcon = Transform(
         alignment: Alignment.center,

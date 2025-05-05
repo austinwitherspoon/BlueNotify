@@ -34,7 +34,17 @@ Future<bool> checkNotificationPermission() async {
 Future<void> openUrl(String url) async {
   Logs.info(text: 'Opening URL: $url');
   final Uri uri = Uri.parse(url);
-  if (Platform.isIOS) {
+
+  bool isIOS = false;
+  try {
+    if (Platform.isIOS) {
+      isIOS = true;
+    }
+  } catch (e) {
+    // ignore the error if we're not running on iOS
+  }
+
+  if (isIOS) {
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       Logs.error(text: 'Could not launch $uri');
       return;

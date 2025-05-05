@@ -19,7 +19,9 @@ const dsn = kDebugMode
     : 'https://476441eeec8d8ababd12e7e148193d62@sentry.austinwitherspoon.com/2';
 
 const apiServer =
-    kDebugMode ? 'http://10.0.2.2:8004' : 'https://api.bluenotify.app';
+    (kDebugMode && !kIsWeb)
+    ? 'http://10.0.2.2:8004'
+    : 'https://api.bluenotify.app';
 
 void configSentryUser() {
   var blueskyDid = settings.accounts.firstOrNull?.did;

@@ -1,7 +1,9 @@
 import 'package:blue_notify/account_page.dart';
 import 'package:blue_notify/logs.dart';
+import 'package:blue_notify/main.dart';
 import 'package:blue_notify/notification.dart';
 import 'package:blue_notify/shoutout.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
@@ -274,6 +276,17 @@ class OverviewPageState extends State<OverviewPage> {
                                     itemBuilder: (context, index) {
                                       final notification =
                                           notificationHistory[index];
+
+                                      String? image;
+
+                                      if (kIsWeb) {
+                                        if (notification.image != null) {
+                                          var url_encoded = Uri.encodeComponent(
+                                              notification.image!);
+                                          image =
+                                              '$apiServer/image/$url_encoded';
+                                        }
+                                      }
                                       return Dismissible(
                                         key: Key(notification.id.toString()),
                                         onDismissed: (direction) {
@@ -302,13 +315,31 @@ class OverviewPageState extends State<OverviewPage> {
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 Text(notification.body),
-                                                if (notification.image != null)
+                                                if (image != null)
                                                   Padding(
                                                       padding:
                                                           const EdgeInsets.only(
                                                               top: 8.0),
                                                       child: Image.network(
-                                                        notification.image!,
+                                                        image,
+                                                        width:
+                                                            kIsWeb ? 300 : null,
+                                                        loadingBuilder: (context,
+                                                            child,
+                                                            loadingProgress) {
+                                                          if (loadingProgress ==
+                                                              null) {
+                                                            return child;
+                                                          } else {
+                                                            return const Center(
+                                                              child:
+                                                                  CircularProgressIndicator(
+                                                                color:
+                                                                    Colors.blue,
+                                                              ),
+                                                            );
+                                                          }
+                                                        },
                                                         errorBuilder:
                                                             (BuildContext
                                                                     context,

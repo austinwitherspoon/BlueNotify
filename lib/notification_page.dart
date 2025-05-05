@@ -227,8 +227,10 @@ class _RequiredWordsDialogState extends State<RequiredWordsDialog> {
 
     return AlertDialog(
       title: Text(widget.title),
+      scrollable: true,
+      
       content: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max,
         children: [
           if (description != null)
             Padding(
@@ -257,8 +259,7 @@ class _RequiredWordsDialogState extends State<RequiredWordsDialog> {
             child: const Text("Add"),
           ),
           const SizedBox(height: 10),
-          Expanded(
-            child: Container(
+          Container(
                 width: double.maxFinite,
                 child: ListView.builder(
                   shrinkWrap: true,
@@ -277,7 +278,7 @@ class _RequiredWordsDialogState extends State<RequiredWordsDialog> {
                     );
                   },
                 )),
-          ),
+          
         ],
       ),
       actions: [

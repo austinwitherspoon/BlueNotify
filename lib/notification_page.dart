@@ -123,27 +123,12 @@ class SingleNotificationSettings extends StatelessWidget {
                         },
                       );
                     },
-                    child: Padding(
-                      padding: const EdgeInsets.only(
-                          top: 10.0, left: 15.0, right: 15.0, bottom: 10.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "Required words: ",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          Expanded(
-                            child: Text(
-                              setting.wordAllowList?.join(', ') ?? "Not Set",
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.left,
-                            ),
-                          ),
-                          const Text("Tap to Edit",
-                              style: TextStyle(color: Colors.blue)),
-                        ],
-                      ),
+                    child: ListTile(
+                      title: const Text("Required words",
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle:
+                          Text(setting.wordAllowList?.join(', ') ?? "Not Set"),
+                      trailing: const Icon(Icons.edit),
                     )),
                 GestureDetector(
                     onTap: () {
@@ -165,27 +150,12 @@ class SingleNotificationSettings extends StatelessWidget {
                         },
                       );
                     },
-                    child: Padding(
-                      padding: const EdgeInsets.only(
-                          top: 10.0, left: 15.0, right: 15.0, bottom: 10.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "Blocked words: ",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          Expanded(
-                            child: Text(
-                              setting.wordBlockList?.join(', ') ?? "Not Set",
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.left,
-                            ),
-                          ),
-                          const Text("Tap to Edit",
-                              style: TextStyle(color: Colors.blue)),
-                        ],
-                      ),
+                    child: ListTile(
+                      title: const Text("Blocked words",
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle:
+                          Text(setting.wordBlockList?.join(', ') ?? "Not Set"),
+                      trailing: const Icon(Icons.edit),
                     ))
               ],
         ));
@@ -228,7 +198,6 @@ class _RequiredWordsDialogState extends State<RequiredWordsDialog> {
     return AlertDialog(
       title: Text(widget.title),
       scrollable: true,
-      
       content: Column(
         mainAxisSize: MainAxisSize.max,
         children: [
@@ -246,6 +215,14 @@ class _RequiredWordsDialogState extends State<RequiredWordsDialog> {
               labelText: "Add a word",
               hintText: "Enter a word",
             ),
+            onSubmitted: (value) {
+              if (value.isNotEmpty) {
+                setState(() {
+                  words.add(value.trim());
+                });
+                wordController.clear();
+              }
+            },
           ),
           ElevatedButton(
             onPressed: () {
@@ -259,8 +236,9 @@ class _RequiredWordsDialogState extends State<RequiredWordsDialog> {
             child: const Text("Add"),
           ),
           const SizedBox(height: 10),
-          Container(
+          SizedBox(
                 width: double.maxFinite,
+              height: double.maxFinite,
                 child: ListView.builder(
                   shrinkWrap: true,
                   itemCount: words.length,
@@ -460,7 +438,6 @@ class _NotificationPageState extends State<NotificationPage> {
                 "You aren't connected to a bluesky account yet, would you like to do that now?"),
             actions: <Widget>[
               TextButton(
-                child: const Text("Add Account"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -469,9 +446,11 @@ class _NotificationPageState extends State<NotificationPage> {
                   Navigator.of(context).pop();
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => AccountPage()),
+                    MaterialPageRoute(
+                        builder: (context) => const AccountPage()),
                   );
                 },
+                child: const Text("Add Account"),
               ),
               TextButton(
                 child: const Text("Cancel"),

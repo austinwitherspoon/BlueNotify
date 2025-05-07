@@ -11,7 +11,6 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     var mq = MediaQuery.of(context);
 
     var showShoutOut = mq.size.height > 650 && mq.textScaler.scale(10) < 20;
@@ -41,7 +40,10 @@ class SettingsPage extends StatelessWidget {
                         const SnackBar(content: Text('Resync completed')),
                       );
                     },
-                    child: const Text("Force Resync"),
+                    child: const Text(
+                      "Force Resync",
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
                 ListTile(
@@ -93,7 +95,8 @@ class SettingsPage extends StatelessWidget {
                         );
                       }
                     },
-                    child: const Text("Send Error Report to Developer"),
+                    child: const Text("Send Error Report to Developer",
+                        textAlign: TextAlign.center),
                   ),
                 ),
                 ListTile(
@@ -136,7 +139,10 @@ class SettingsPage extends StatelessWidget {
                         },
                       );
                     },
-                    child: const Text("Remove All Notification Settings"),
+                    child: const Text(
+                      "Remove All Notification Settings",
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
                 const Divider(),
@@ -203,8 +209,7 @@ class SettingsPage extends StatelessWidget {
               ],
             ),
           ),
-          if (showShoutOut)
-          const ShoutOut(),
+          if (showShoutOut) const ShoutOut(),
         ]);
       }),
     );

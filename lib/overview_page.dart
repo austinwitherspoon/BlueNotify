@@ -286,6 +286,8 @@ class OverviewPageState extends State<OverviewPage> {
                                           image =
                                               '$apiServer/image/$urlEncoded';
                                         }
+                                      } else {
+                                        image = notification.image;
                                       }
                                       return Dismissible(
                                         key: Key(notification.id.toString()),

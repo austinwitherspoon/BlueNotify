@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class SettingsPage extends StatelessWidget {
+  const SettingsPage({super.key});
+
   @override
   Widget build(BuildContext context) {
 
@@ -36,7 +38,7 @@ class SettingsPage extends StatelessWidget {
                       await settings.forceResync();
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Resync completed')),
+                        const SnackBar(content: Text('Resync completed')),
                       );
                     },
                     child: const Text("Force Resync"),
@@ -96,7 +98,6 @@ class SettingsPage extends StatelessWidget {
                 ),
                 ListTile(
                   title: ElevatedButton(
-                    child: const Text("Remove All Notification Settings"),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.secondary,
                       foregroundColor:
@@ -124,7 +125,7 @@ class SettingsPage extends StatelessWidget {
                                       .removeAllNotificationSettings();
                                   Navigator.of(context).pop();
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
+                                    const SnackBar(
                                         content: Text(
                                             'All notification settings removed')),
                                   );
@@ -135,6 +136,7 @@ class SettingsPage extends StatelessWidget {
                         },
                       );
                     },
+                    child: const Text("Remove All Notification Settings"),
                   ),
                 ),
                 const Divider(),
@@ -180,10 +182,9 @@ class SettingsPage extends StatelessWidget {
                         },
                       ),
                     );
-                  }).toList(),
+                  }),
                 ListTile(
                   title: ElevatedButton(
-                    child: const Text("Add an Account"),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.secondary,
                       foregroundColor:
@@ -192,16 +193,18 @@ class SettingsPage extends StatelessWidget {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => AccountPage()),
+                        MaterialPageRoute(
+                            builder: (context) => const AccountPage()),
                       );
                     },
+                    child: const Text("Add an Account"),
                   ),
                 )
               ],
             ),
           ),
           if (showShoutOut)
-          ShoutOut(),
+          const ShoutOut(),
         ]);
       }),
     );
@@ -210,10 +213,12 @@ class SettingsPage extends StatelessWidget {
 
 showLoadingDialog(BuildContext context) {
   AlertDialog alert = AlertDialog(
-    content: new Row(
+    content: Row(
       children: [
-        CircularProgressIndicator(),
-        Container(margin: EdgeInsets.only(left: 5), child: Text("Loading")),
+        const CircularProgressIndicator(),
+        Container(
+            margin: const EdgeInsets.only(left: 5),
+            child: const Text("Loading")),
       ],
     ),
   );

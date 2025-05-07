@@ -13,10 +13,12 @@ class AccountPage extends StatefulWidget {
 
 showLoadingDialog(BuildContext context) {
   AlertDialog alert = AlertDialog(
-    content: new Row(
+    content: Row(
       children: [
-        CircularProgressIndicator(),
-        Container(margin: EdgeInsets.only(left: 5), child: Text("Loading")),
+        const CircularProgressIndicator(),
+        Container(
+            margin: const EdgeInsets.only(left: 5),
+            child: const Text("Loading")),
       ],
     ),
   );
@@ -131,7 +133,7 @@ class _AccountPageState extends State<AccountPage> {
       } catch (e) {
         Logs.error(text: "Failed to connect to bluesky: $e");
         setState(() {
-          _formError = "Could not connect to bluesky: " + e.toString();
+          _formError = "Could not connect to bluesky: $e";
         });
         Navigator.pop(context);
         return;

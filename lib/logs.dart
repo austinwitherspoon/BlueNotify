@@ -1,11 +1,9 @@
 import 'package:blue_notify/main.dart';
-import 'package:blue_notify/settings.dart';
 import 'package:f_logs/f_logs.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:sentry/sentry_io.dart';
 import 'package:stack_trace/stack_trace.dart';
-import 'dart:developer' as developer;
 
 String webLogs = "";
 

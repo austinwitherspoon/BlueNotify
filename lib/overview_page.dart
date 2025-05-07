@@ -281,10 +281,10 @@ class OverviewPageState extends State<OverviewPage> {
 
                                       if (kIsWeb) {
                                         if (notification.image != null) {
-                                          var url_encoded = Uri.encodeComponent(
+                                          var urlEncoded = Uri.encodeComponent(
                                               notification.image!);
                                           image =
-                                              '$apiServer/image/$url_encoded';
+                                              '$apiServer/image/$urlEncoded';
                                         }
                                       }
                                       return Dismissible(

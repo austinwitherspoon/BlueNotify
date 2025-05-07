@@ -281,7 +281,7 @@ class Settings with ChangeNotifier {
         },
         body: rawJson);
     if (response.statusCode != 200) {
-      Logs.error(text: 'network error ${response}');
+      Logs.error(text: 'network error $response');
       throw Exception('network error ${response.statusCode}');
     }
 

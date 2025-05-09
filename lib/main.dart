@@ -270,7 +270,7 @@ class _NavigationState extends State<Navigation> {
       body: <Widget>[
         const OverviewPage(),
         const NotificationPage(),
-        SettingsPage(),
+        const SettingsPage(),
       ][currentPageIndex],
     );
   }

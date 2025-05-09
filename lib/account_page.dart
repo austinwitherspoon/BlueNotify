@@ -1,6 +1,5 @@
 import 'package:blue_notify/logs.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'settings.dart';
 import 'package:blue_notify/bluesky.dart';
 

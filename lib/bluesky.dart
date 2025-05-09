@@ -126,7 +126,7 @@ class BlueskyService {
   Future<List<Post>> getPostsFromAuthor(String author, DateTime since) async {
     final List<Post> results = [];
     var remainingPosts = maxPostsToLoad;
-    var cursor;
+    String? cursor;
     while (true) {
       final feed = await _bluesky.feed
           .getAuthorFeed(actor: author, cursor: cursor, limit: fetchSize);
@@ -160,7 +160,7 @@ class BlueskyService {
 
   Future<List<Profile>> getFollowingForUser(String name) async {
     final List<Profile> following = [];
-    var cursor;
+    String? cursor;
     while (true) {
       final results = await _bluesky.graph
           .getFollows(actor: name, cursor: cursor, limit: fetchSize);

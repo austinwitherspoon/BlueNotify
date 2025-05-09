@@ -241,6 +241,7 @@ class _RequiredWordsDialogState extends State<RequiredWordsDialog> {
               height: double.maxFinite,
                 child: ListView.builder(
                   shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
                   itemCount: words.length,
                   itemBuilder: (context, index) {
                     return ListTile(

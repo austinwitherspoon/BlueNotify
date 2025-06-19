@@ -2,8 +2,10 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'package:blue_notify/bluesky.dart';
+import 'package:blue_notify/notification.dart';
 import 'package:blue_notify/logs.dart';
 import 'package:blue_notify/main.dart';
+import 'package:flutter_udid/flutter_udid.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -271,6 +273,10 @@ class Settings with ChangeNotifier {
       "fcm_token": fcmToken
     };
 
+    if (!kIsWeb) {
+      settingsData['device_uuid'] = await FlutterUdid.udid;
+    }
+
     Logs.info(text: 'Uploading settings to api: $settingsData');
     var url = '$apiServer/settings/$fcmToken';
     var rawJson = jsonEncode(settingsData);
@@ -347,8 +353,19 @@ class Settings with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> resetToken() async {
+    Logs.info(text: 'Resetting FCM token');
+    lastToken = null;
+    await FirebaseMessaging.instance.deleteToken();
+    await checkNotificationPermission();
+  }
+
   Future<void> forceResync() async {
     Logs.info(text: 'Forcing resync');
+    if (!kIsWeb) {
+      Logs.info(text: 'Deleting FCM token');
+      await resetToken();
+    }
     await saveNotificationSettings();
   }
 }

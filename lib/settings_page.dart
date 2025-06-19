@@ -103,52 +103,6 @@ class SettingsPage extends StatelessWidget {
                         textAlign: TextAlign.center),
                   ),
                 ),
-                ListTile(
-                  title: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.secondary,
-                      foregroundColor:
-                          Theme.of(context).colorScheme.onSecondary,
-                    ),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: const Text("Confirm Removal"),
-                            content: const Text(
-                                "Are you sure you want to remove all notification settings? This action cannot be undone."),
-                            actions: <Widget>[
-                              TextButton(
-                                child: const Text("Cancel"),
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                              ),
-                              TextButton(
-                                child: const Text("Remove"),
-                                onPressed: () async {
-                                  await settings
-                                      .removeAllNotificationSettings();
-                                  Navigator.of(context).pop();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text(
-                                            'All notification settings removed')),
-                                  );
-                                },
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    },
-                    child: const Text(
-                      "Remove All Notification Settings",
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
                 const Divider(),
                 const ListTile(
                   title: Text("Accounts"),
@@ -282,6 +236,52 @@ class SettingsPage extends StatelessWidget {
                     },
                     child: const Text(
                       "Restore Settings",
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                ListTile(
+                  title: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.secondary,
+                      foregroundColor:
+                          Theme.of(context).colorScheme.onSecondary,
+                    ),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text("Confirm Removal"),
+                            content: const Text(
+                                "Are you sure you want to remove all notification settings? This action cannot be undone."),
+                            actions: <Widget>[
+                              TextButton(
+                                child: const Text("Cancel"),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                              ),
+                              TextButton(
+                                child: const Text("Remove"),
+                                onPressed: () async {
+                                  await settings
+                                      .removeAllNotificationSettings();
+                                  Navigator.of(context).pop();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text(
+                                            'All notification settings removed')),
+                                  );
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                    child: const Text(
+                      "Remove All Notification Settings",
                       textAlign: TextAlign.center,
                     ),
                   ),

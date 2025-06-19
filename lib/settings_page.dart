@@ -254,7 +254,7 @@ class SettingsPage extends StatelessWidget {
                           return AlertDialog(
                             title: const Text("Confirm Removal"),
                             content: const Text(
-                                "Are you sure you want to remove all notification settings? This action cannot be undone."),
+                                "Are you sure you want to remove all of your data from BlueNotify? You will no longer receive notifications."),
                             actions: <Widget>[
                               TextButton(
                                 child: const Text("Cancel"),
@@ -266,12 +266,12 @@ class SettingsPage extends StatelessWidget {
                                 child: const Text("Remove"),
                                 onPressed: () async {
                                   await settings
-                                      .removeAllNotificationSettings();
+                                      .deleteAccountData();
                                   Navigator.of(context).pop();
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                         content: Text(
-                                            'All notification settings removed')),
+                                            'Account data removed.')),
                                   );
                                 },
                               ),
@@ -281,7 +281,7 @@ class SettingsPage extends StatelessWidget {
                       );
                     },
                     child: const Text(
-                      "Remove All Notification Settings",
+                      "Delete all BlueNotify account data",
                       textAlign: TextAlign.center,
                     ),
                   ),

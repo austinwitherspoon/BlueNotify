@@ -405,4 +405,34 @@ class Settings with ChangeNotifier {
 
     notifyListeners();
   }
+
+  /// Delete all account data
+  Future<void> deleteAccountData() async {
+    Logs.info(text: 'Deleting all account data');
+    final uuid = await FlutterUdid.udid;
+    var fcmId = await settings.fcmToken();
+    var url = '$apiServer/account';
+    var body = {
+      'fcm_token': fcmId,
+      'device_uuid': uuid,
+    };
+    var response = await http.delete(Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(body));
+
+    if (response.statusCode != 200) {
+      Logs.error(text: 'network error ${response.statusCode}');
+      throw Exception('network error ${response.statusCode}');
+    }
+    await removeAllNotificationSettings();
+    accounts.clear();
+    _sharedPrefs!.remove('accounts');
+    _sharedPrefs!.remove('notificationSettings');
+    _sharedPrefs!.remove('lastToken');
+    _sharedPrefs!.remove('newestFirst');
+    _sharedPrefs!.remove('lastClearLogHistory');
+    notifyListeners();
+  }
 }

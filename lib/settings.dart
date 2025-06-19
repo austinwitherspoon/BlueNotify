@@ -402,7 +402,5 @@ class Settings with ChangeNotifier {
     _buildNotificationSettingsMap();
 
     await saveNotificationSettings();
-
-    notifyListeners();
   }
 }

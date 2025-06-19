@@ -182,14 +182,12 @@ class SettingsPage extends StatelessWidget {
                           fileName: 'blue_notify_settings.json',
                           bytes: utf8.encode(json_string),
                         );
-                        Navigator.of(context).pop();
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                               content:
                                   Text('Settings backed up successfully.')),
                         );
                       } catch (e) {
-                        Navigator.of(context).pop();
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Backup failed: $e')),
                         );
@@ -222,13 +220,11 @@ class SettingsPage extends StatelessWidget {
                             utf8.decode(result.files.single.bytes!);
                         showLoadingDialog(context);
                         await settings.restoreSettingsFromJson(jsonString);
-                        Navigator.of(context).pop();
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                               content: Text('Settings restored successfully.')),
                         );
                       } catch (e) {
-                        Navigator.of(context).pop();
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Restore failed: $e')),
                         );

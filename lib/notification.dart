@@ -96,6 +96,13 @@ class ServerNotification {
     Logs.info(text: 'Tapped notification: $this');
     if (url != null) {
       await openUrl(url!);
+      try {
+        var fcmId = await settings.fcmToken();
+        var url = '$apiServer/notifications/$fcmId/opened';
+        await http.post(Uri.parse(url));
+      } catch (e) {
+        Logs.error(text: 'Error marking notification as opened: $e');
+      }
     } else {
       Sentry.captureMessage('No URL to open! Notification: $this',
           level: SentryLevel.error);
@@ -143,7 +150,7 @@ class ServerNotification {
   String toString() {
     return 'ServerNotification{id: $id, createdAt: $createdAt, title: $title, body: $body, url: $url, image: $image}';
   }
-  
+
   Future<void> delete() async {
     var fcmId = await settings.fcmToken();
     var url = '$apiServer/notifications/$fcmId/$id';

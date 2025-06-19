@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:receive_intent/receive_intent.dart';
 
@@ -18,8 +19,7 @@ const dsn = kDebugMode
     ? ''
     : 'https://476441eeec8d8ababd12e7e148193d62@sentry.austinwitherspoon.com/2';
 
-const apiServer =
-    (kDebugMode && !kIsWeb)
+const apiServer = (kDebugMode && !kIsWeb)
     ? 'http://10.0.2.2:8004'
     : 'https://api.bluenotify.app';
 
@@ -124,6 +124,14 @@ Future<void> handleMessageTap(RemoteMessage message,
         text:
             'Triggering tap response for notification: $rawNotification, url: $url');
     await openUrl(url);
+    try {
+      Logs.info(text: 'Sending open interaction to server');
+      var fcmId = await settings.fcmToken();
+      var url = '$apiServer/notifications/$fcmId/opened';
+      await http.post(Uri.parse(url));
+    } catch (e) {
+      Logs.error(text: 'Error marking notification as opened: $e');
+    }
   } catch (e, stackTrace) {
     Logs.error(
         text: 'Error handling tapped message: $e', stacktrace: stackTrace);

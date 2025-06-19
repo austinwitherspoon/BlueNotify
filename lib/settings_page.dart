@@ -1,8 +1,12 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:blue_notify/account_page.dart';
 import 'package:blue_notify/logs.dart';
 import 'package:blue_notify/notification.dart';
 import 'package:blue_notify/settings.dart';
 import 'package:blue_notify/shoutout.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -205,7 +209,83 @@ class SettingsPage extends StatelessWidget {
                     },
                     child: const Text("Add an Account"),
                   ),
-                )
+                ),
+                const Divider(),
+                ListTile(
+                  title: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.secondary,
+                      foregroundColor:
+                          Theme.of(context).colorScheme.onSecondary,
+                    ),
+                    onPressed: () async {
+                      try {
+                        showLoadingDialog(context);
+                        final json_string = settings.backupSettingsToJson();
+                        String? savePath = await FilePicker.platform.saveFile(
+                          dialogTitle:
+                              'Select location to save settings backup',
+                          fileName: 'blue_notify_settings.json',
+                          bytes: utf8.encode(json_string),
+                        );
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content:
+                                  Text('Settings backed up successfully.')),
+                        );
+                      } catch (e) {
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Backup failed: $e')),
+                        );
+                      }
+                    },
+                    child: const Text(
+                      "Backup Settings",
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                ListTile(
+                  title: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.secondary,
+                      foregroundColor:
+                          Theme.of(context).colorScheme.onSecondary,
+                    ),
+                    onPressed: () async {
+                      FilePickerResult? result =
+                          await FilePicker.platform.pickFiles(
+                        dialogTitle: 'Select settings backup file to restore',
+                        type: FileType.custom,
+                        allowedExtensions: ['json'],
+                        withData: true,
+                      );
+                      if (result == null) return;
+                      try {
+                        String jsonString =
+                            utf8.decode(result.files.single.bytes!);
+                        showLoadingDialog(context);
+                        await settings.restoreSettingsFromJson(jsonString);
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('Settings restored successfully.')),
+                        );
+                      } catch (e) {
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Restore failed: $e')),
+                        );
+                      }
+                    },
+                    child: const Text(
+                      "Restore Settings",
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

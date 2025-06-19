@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
 
 final settings = Settings();
 
@@ -338,7 +339,7 @@ class Settings with ChangeNotifier {
     await _sharedPrefs!.remove('notificationSettings');
     notifyListeners();
     final fcmToken = await retrieveToken();
-    
+
     var url = '$apiServer/settings/$fcmToken';
     final response = await http.delete(Uri.parse(url));
     if (response.statusCode != 200) {
@@ -367,5 +368,41 @@ class Settings with ChangeNotifier {
       await resetToken();
     }
     await saveNotificationSettings();
+  }
+
+  /// Backup all settings to JSON
+  String backupSettingsToJson() {
+    final backupData = {
+      'accounts': accounts.map((e) => e.toJson()).toList(),
+      'notificationSettings':
+          notificationSettings.map((e) => e.toJson()).toList(),
+    };
+    return jsonEncode(backupData);
+  }
+
+  /// Restore all settings from JSON data
+  Future<void> restoreSettingsFromJson(String json) async {
+    final data = jsonDecode(json);
+
+    // Restore accounts
+    final restoredAccounts = (data['accounts'] as List<dynamic>)
+        .map((e) => AccountReference.fromJson(e))
+        .toList();
+    _accounts = restoredAccounts;
+    _sharedPrefs!.setStringList(
+        'accounts', restoredAccounts.map((e) => jsonEncode(e)).toList());
+
+    // Restore notification settings
+    final restoredSettings = (data['notificationSettings'] as List<dynamic>)
+        .map((e) => NotificationSetting.fromJson(e))
+        .toList();
+    _notificationSettings = restoredSettings;
+    _sharedPrefs!.setStringList('notificationSettings',
+        restoredSettings.map((e) => jsonEncode(e)).toList());
+    _buildNotificationSettingsMap();
+
+    await saveNotificationSettings();
+
+    notifyListeners();
   }
 }
